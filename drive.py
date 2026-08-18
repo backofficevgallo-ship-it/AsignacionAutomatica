@@ -1,0 +1,290 @@
+import os
+import json
+
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+
+
+# ============================================================
+# GOOGLE DRIVE
+# ============================================================
+
+SCOPES = [
+    "https://www.googleapis.com/auth/drive.readonly"
+]
+
+
+# ============================================================
+# CARGAR CREDENCIALES
+#
+# LOCAL:
+#   Usa credenciales_drive.json
+#
+# RENDER:
+#   Usa la variable de entorno GOOGLE_CREDENTIALS
+# ============================================================
+
+def cargar_credenciales():
+
+    # --------------------------------------------------------
+    # RENDER
+    # --------------------------------------------------------
+
+    credenciales_json = os.environ.get(
+        "GOOGLE_CREDENTIALS"
+    )
+
+    if credenciales_json:
+
+        try:
+
+            datos = json.loads(
+                credenciales_json
+            )
+
+            return (
+                service_account.Credentials
+                .from_service_account_info(
+                    datos,
+                    scopes=SCOPES
+                )
+            )
+
+        except Exception as e:
+
+            raise RuntimeError(
+                "No se pudieron cargar las "
+                "credenciales de Google Drive "
+                "desde GOOGLE_CREDENTIALS."
+            ) from e
+
+    # --------------------------------------------------------
+    # PC LOCAL
+    # --------------------------------------------------------
+
+    archivo_credenciales = (
+        "credenciales_drive.json"
+    )
+
+    if not os.path.exists(
+        archivo_credenciales
+    ):
+
+        raise FileNotFoundError(
+            "No se encontró "
+            "'credenciales_drive.json' "
+            "y tampoco está definida "
+            "la variable GOOGLE_CREDENTIALS."
+        )
+
+    return (
+        service_account.Credentials
+        .from_service_account_file(
+            archivo_credenciales,
+            scopes=SCOPES
+        )
+    )
+
+
+# ============================================================
+# CONEXIÓN GOOGLE DRIVE
+# ============================================================
+
+credenciales = cargar_credenciales()
+
+drive = build(
+    "drive",
+    "v3",
+    credentials=credenciales
+)
+
+
+# ============================================================
+# BUSCAR CARPETA
+# ============================================================
+
+def buscar_carpeta_drive(
+    nombre_carpeta
+):
+
+    resultado = drive.files().list(
+        q=(
+            "name = '"
+            + nombre_carpeta
+            + "' "
+            "and mimeType = "
+            "'application/vnd.google-apps.folder' "
+            "and trashed = false"
+        ),
+        spaces="drive",
+        fields="files(id,name,mimeType)"
+    ).execute()
+
+    carpetas = resultado.get(
+        "files",
+        []
+    )
+
+    if not carpetas:
+
+        raise FileNotFoundError(
+            f"No se encontró la carpeta "
+            f"'{nombre_carpeta}' en Google Drive."
+        )
+
+    return carpetas[0]["id"]
+
+
+# ============================================================
+# BUSCAR ÚLTIMO EXCEL DE UNA CARPETA
+# ============================================================
+
+def buscar_ultimo_excel_drive(
+    carpeta_id
+):
+
+    resultado = drive.files().list(
+        q=(
+            "'"
+            + carpeta_id
+            + "' in parents "
+            "and trashed = false"
+        ),
+        spaces="drive",
+        orderBy="modifiedTime desc",
+        pageSize=50,
+        fields=(
+            "files("
+            "id,"
+            "name,"
+            "mimeType,"
+            "modifiedTime"
+            ")"
+        )
+    ).execute()
+
+    archivos = resultado.get(
+        "files",
+        []
+    )
+
+    archivos_excel = [
+        archivo
+        for archivo in archivos
+        if archivo["name"].lower().endswith(
+            (".xlsx", ".xls")
+        )
+    ]
+
+    if not archivos_excel:
+
+        return None
+
+    return archivos_excel[0]
+
+
+# ============================================================
+# DESCARGAR ARCHIVO
+# ============================================================
+
+def descargar_archivo_drive(
+    archivo,
+    ruta_local
+):
+
+    print()
+    print(
+        "Descargando desde Drive:",
+        archivo["name"]
+    )
+
+    request = drive.files().get_media(
+        fileId=archivo["id"]
+    )
+
+    carpeta_local = os.path.dirname(
+        ruta_local
+    )
+
+    if carpeta_local:
+
+        os.makedirs(
+            carpeta_local,
+            exist_ok=True
+        )
+
+    with open(
+        ruta_local,
+        "wb"
+    ) as archivo_local:
+
+        downloader = MediaIoBaseDownload(
+            archivo_local,
+            request
+        )
+
+        terminado = False
+
+        while not terminado:
+
+            estado, terminado = (
+                downloader.next_chunk()
+            )
+
+            if estado:
+
+                porcentaje = int(
+                    estado.progress() * 100
+                )
+
+                print(
+                    f"Descarga: {porcentaje}%"
+                )
+
+    print(
+        "Guardado localmente en:",
+        ruta_local
+    )
+
+
+# ============================================================
+# DESCARGAR ÚLTIMO ARCHIVO DE UNA CARPETA
+# ============================================================
+
+def descargar_ultimo_de_carpeta(
+    nombre_carpeta,
+    carpeta_local
+):
+
+    carpeta_id = buscar_carpeta_drive(
+        nombre_carpeta
+    )
+
+    archivo = buscar_ultimo_excel_drive(
+        carpeta_id
+    )
+
+    if archivo is None:
+
+        raise FileNotFoundError(
+            f"No se encontró ningún Excel "
+            f"en la carpeta '{nombre_carpeta}'."
+        )
+
+    os.makedirs(
+        carpeta_local,
+        exist_ok=True
+    )
+
+    ruta_local = os.path.join(
+        carpeta_local,
+        archivo["name"]
+    )
+
+    descargar_archivo_drive(
+        archivo,
+        ruta_local
+    )
+
+    return ruta_local

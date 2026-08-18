@@ -1,0 +1,930 @@
+* {
+    box-sizing: border-box;
+}
+
+
+body {
+
+    margin: 0;
+
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f4f6f8;
+
+    color: #202124;
+
+}
+
+
+.app {
+
+    min-height: 100vh;
+
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.header {
+
+    height: 82px;
+
+    background: #ffffff;
+
+    border-bottom:
+        1px solid #e4e7eb;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 42px;
+
+}
+
+
+.header-left {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+}
+
+
+.logo {
+
+    width: 44px;
+
+    height: 44px;
+
+    border-radius: 11px;
+
+    background: #ec0000;
+
+    color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 24px;
+
+    font-weight: 700;
+
+    box-shadow:
+        0 4px 10px rgba(236, 0, 0, .18);
+
+}
+
+
+.header h1 {
+
+    margin: 0;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    letter-spacing: .1px;
+
+}
+
+
+.header p {
+
+    margin: 4px 0 0;
+
+    color: #747980;
+
+    font-size: 13px;
+
+}
+
+
+.header-status {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 13px;
+
+    color: #555b62;
+
+}
+
+
+.status-dot {
+
+    width: 9px;
+
+    height: 9px;
+
+    border-radius: 50%;
+
+    background: #20a464;
+
+    box-shadow:
+        0 0 0 4px #e7f6ee;
+
+}
+
+
+/* ============================================================
+   CONTENIDO
+============================================================ */
+
+.content {
+
+    width:
+        min(
+            1050px,
+            calc(100% - 40px)
+        );
+
+    margin: 35px auto;
+
+}
+
+
+/* ============================================================
+   CARDS
+============================================================ */
+
+.card {
+
+    background: #ffffff;
+
+    border:
+        1px solid #e3e6ea;
+
+    border-radius: 15px;
+
+    padding: 30px;
+
+    box-shadow:
+        0 4px 18px rgba(0, 0, 0, .045);
+
+    margin-bottom: 24px;
+
+}
+
+
+.card-title {
+
+    margin-bottom: 25px;
+
+}
+
+
+.card-title h2 {
+
+    margin: 0;
+
+    font-size: 19px;
+
+    font-weight: 700;
+
+}
+
+
+.card-title p {
+
+    margin: 7px 0 0;
+
+    color: #777d84;
+
+    font-size: 13px;
+
+}
+
+
+/* ============================================================
+   UPLOAD
+============================================================ */
+
+.upload-box {
+
+    min-height: 130px;
+
+    border:
+        2px dashed #d5d9de;
+
+    border-radius: 13px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 25px;
+
+    cursor: pointer;
+
+    transition:
+        border-color .2s,
+        background .2s,
+        transform .2s;
+
+    margin-bottom: 28px;
+
+}
+
+
+.upload-box:hover {
+
+    border-color: #ec0000;
+
+    background: #fffafa;
+
+    transform: translateY(-1px);
+
+}
+
+
+.upload-icon {
+
+    width: 52px;
+
+    height: 52px;
+
+    flex-shrink: 0;
+
+    border-radius: 11px;
+
+    background: #fff0f0;
+
+    color: #ec0000;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 27px;
+
+    font-weight: 700;
+
+    margin-right: 18px;
+
+}
+
+
+.upload-text {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+}
+
+
+.upload-text strong {
+
+    font-size: 15px;
+
+}
+
+
+.upload-text span {
+
+    font-size: 12px;
+
+    color: #858a91;
+
+}
+
+
+.upload-text span:last-child {
+
+    color: #a0a5aa;
+
+}
+
+
+.upload-box input {
+
+    display: none;
+
+}
+
+
+.archivo-seleccionado {
+
+    color: #16834d !important;
+
+    font-weight: 600;
+
+}
+
+
+/* ============================================================
+   ARCHIVOS AUTOMATICOS
+============================================================ */
+
+.section-label {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: #6d737a;
+
+    text-transform: uppercase;
+
+    letter-spacing: .7px;
+
+    margin-bottom: 12px;
+
+}
+
+
+.files-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 28px;
+
+}
+
+
+.file-card {
+
+    border:
+        1px solid #e3e6ea;
+
+    border-radius: 10px;
+
+    padding: 15px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    background: #fafbfc;
+
+    transition: .2s;
+
+}
+
+
+.file-card:hover {
+
+    border-color: #cfd4d9;
+
+    background: #ffffff;
+
+}
+
+
+.file-icon {
+
+    width: 31px;
+
+    height: 31px;
+
+    flex-shrink: 0;
+
+    border-radius: 8px;
+
+    background: #e7f6ee;
+
+    color: #16834d;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-weight: bold;
+
+}
+
+
+.file-card strong,
+.file-card span {
+
+    display: block;
+
+}
+
+
+.file-card strong {
+
+    font-size: 13px;
+
+}
+
+
+.file-card span {
+
+    font-size: 10px;
+
+    color: #858a91;
+
+    margin-top: 3px;
+
+}
+
+
+/* ============================================================
+   BOTON PRINCIPAL
+============================================================ */
+
+.btn-primary {
+
+    width: 100%;
+
+    height: 53px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #ec0000;
+
+    color: #ffffff;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background .2s,
+        transform .2s,
+        box-shadow .2s;
+
+}
+
+
+.btn-primary:hover {
+
+    background: #c90000;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 5px 13px rgba(236, 0, 0, .18);
+
+}
+
+
+.btn-primary:active {
+
+    transform: translateY(0);
+
+}
+
+
+.btn-primary span {
+
+    margin-right: 8px;
+
+}
+
+
+/* ============================================================
+   RESULTADOS
+============================================================ */
+
+.results-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 15px;
+
+}
+
+
+.result-card {
+
+    border:
+        1px solid #e2e5e9;
+
+    border-radius: 11px;
+
+    padding: 20px;
+
+    background: #fafbfc;
+
+    transition: .2s;
+
+}
+
+
+.result-card:hover {
+
+    background: #ffffff;
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, .04);
+
+}
+
+
+.result-card strong {
+
+    display: block;
+
+    font-size: 30px;
+
+    margin-top: 8px;
+
+    line-height: 1;
+
+}
+
+
+.result-card small {
+
+    color: #888e95;
+
+    display: block;
+
+    margin-top: 8px;
+
+}
+
+
+.result-label {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    color: #777d84;
+
+    letter-spacing: .4px;
+
+}
+
+
+.result-card.fallecidos {
+
+    border-left:
+        4px solid #d94b4b;
+
+}
+
+
+.result-card.no-gestionar {
+
+    border-left:
+        4px solid #e09b32;
+
+}
+
+
+.result-card.total {
+
+    border-left:
+        4px solid #555;
+
+}
+
+
+/* ============================================================
+   DESCARGA
+============================================================ */
+
+.download-box {
+
+    margin-top: 25px;
+
+    padding: 18px 20px;
+
+    border-radius: 10px;
+
+    background: #f5f7f9;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    border:
+        1px solid #e8ebee;
+
+}
+
+
+.download-box strong,
+.download-box span {
+
+    display: block;
+
+}
+
+
+.download-box strong {
+
+    font-size: 14px;
+
+}
+
+
+.download-box span {
+
+    margin-top: 4px;
+
+    font-size: 12px;
+
+    color: #7c8289;
+
+}
+
+
+.btn-download {
+
+    background: #202124;
+
+    color: #ffffff;
+
+    text-decoration: none;
+
+    padding: 11px 18px;
+
+    border-radius: 7px;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    transition: .2s;
+
+}
+
+
+.btn-download:hover {
+
+    background: #000000;
+
+    transform: translateY(-1px);
+
+}
+
+
+/* ============================================================
+   ERROR
+============================================================ */
+
+.error-card {
+
+    background: #fff5f5;
+
+    border:
+        1px solid #f1cccc;
+
+    border-left:
+        4px solid #ec0000;
+
+    border-radius: 12px;
+
+    padding: 18px 20px;
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 13px;
+
+    margin-bottom: 24px;
+
+}
+
+
+.error-icon {
+
+    width: 28px;
+
+    height: 28px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #ec0000;
+
+    color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-weight: 700;
+
+}
+
+
+.error-card strong {
+
+    font-size: 14px;
+
+}
+
+
+.error-card p {
+
+    margin: 5px 0 0;
+
+    color: #777d84;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ============================================================
+   INFORMACION
+============================================================ */
+
+.info {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding: 18px 20px;
+
+    background: #ffffff;
+
+    border:
+        1px solid #e3e6ea;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, .025);
+
+}
+
+
+.info-icon {
+
+    width: 25px;
+
+    height: 25px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #eef1f4;
+
+    color: #555b62;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+}
+
+
+.info strong {
+
+    font-size: 13px;
+
+}
+
+
+.info p {
+
+    margin: 5px 0 0;
+
+    font-size: 12px;
+
+    color: #777d84;
+
+    line-height: 1.5;
+
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+footer {
+
+    text-align: center;
+
+    color: #92979d;
+
+    font-size: 11px;
+
+    padding: 5px 0 30px;
+
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 800px) {
+
+    .files-grid,
+    .results-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+
+    .header {
+
+        padding: 0 20px;
+
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .content {
+
+        width:
+            calc(100% - 20px);
+
+        margin: 20px auto;
+
+    }
+
+
+    .card {
+
+        padding: 20px;
+
+    }
+
+
+    .files-grid,
+    .results-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .header-status {
+
+        display: none;
+
+    }
+
+
+    .download-box {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+}

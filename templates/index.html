@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Asignación Automática</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="header">
+
+        <div class="header-left">
+
+            <div class="logo">
+                S
+            </div>
+
+            <div>
+
+                <h1>
+                    Asignación Automática
+                </h1>
+
+                <p>
+                    Automatización de asignación de cartera
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="header-status">
+
+            <span class="status-dot"></span>
+
+            Sistema disponible
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENIDO
+    ====================================================== -->
+
+    <main class="content">
+
+
+        <!-- =================================================
+             REPORTE OPERATIVO
+        ================================================== -->
+
+        <section class="card">
+
+            <div class="card-title">
+
+                <h2>
+                    Procesar Reporte Operativo
+                </h2>
+
+                <p>
+                    Seleccioná el archivo correspondiente al
+                    reporte operativo que querés procesar.
+                </p>
+
+            </div>
+
+
+            <form
+                action="/ejecutar"
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+
+                <!-- =========================================
+                     UPLOAD
+                ========================================== -->
+
+                <label
+                    for="reporte"
+                    class="upload-box"
+                >
+
+                    <div class="upload-icon">
+                        ↑
+                    </div>
+
+
+                    <div class="upload-text">
+
+                        <strong>
+                            Seleccionar Reporte Operativo
+                        </strong>
+
+                        <span>
+                            Hacé clic para seleccionar un archivo
+                            Excel (.xlsx o .xls)
+                        </span>
+
+                        <span id="nombre-archivo">
+                            Ningún archivo seleccionado
+                        </span>
+
+                    </div>
+
+
+                    <input
+                        type="file"
+                        id="reporte"
+                        name="reporte"
+                        accept=".xlsx,.xls"
+                        required
+                    >
+
+                </label>
+
+
+                <!-- =========================================
+                     ARCHIVOS AUTOMATICOS
+                ========================================== -->
+
+                <div class="section-label">
+
+                    Archivos utilizados automáticamente
+
+                </div>
+
+
+                <div class="files-grid">
+
+
+                    <div class="file-card">
+
+                        <div class="file-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Stock
+                            </strong>
+
+                            <span>
+                                Google Drive
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="file-card">
+
+                        <div class="file-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Colchón
+                            </strong>
+
+                            <span>
+                                Google Drive
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="file-card">
+
+                        <div class="file-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Pagos
+                            </strong>
+
+                            <span>
+                                Google Drive
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="file-card">
+
+                        <div class="file-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Moria
+                            </strong>
+
+                            <span>
+                                Google Drive
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =========================================
+                     BOTON
+                ========================================== -->
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+
+                    <span>
+                        ▶
+                    </span>
+
+                    EJECUTAR AUTOMATIZACIÓN
+
+                </button>
+
+
+            </form>
+
+        </section>
+
+
+
+        <!-- =================================================
+             RESULTADOS
+        ================================================== -->
+
+        {% if resultado %}
+
+        <section class="card">
+
+            <div class="card-title">
+
+                <h2>
+                    Automatización completada
+                </h2>
+
+                <p>
+                    El proceso finalizó correctamente.
+                </p>
+
+            </div>
+
+
+            <div class="results-grid">
+
+
+                <!-- ASIGNACION -->
+
+                <div class="result-card">
+
+                    <span class="result-label">
+                        ASIGNACIÓN OK
+                    </span>
+
+                    <strong>
+                        {{ resultado.asignacion }}
+                    </strong>
+
+                    <small>
+                        Casos para asignar
+                    </small>
+
+                </div>
+
+
+                <!-- FALLECIDOS -->
+
+                <div class="result-card fallecidos">
+
+                    <span class="result-label">
+                        FALLECIDOS
+                    </span>
+
+                    <strong>
+                        {{ resultado.fallecidos }}
+                    </strong>
+
+                    <small>
+                        Casos detectados
+                    </small>
+
+                </div>
+
+
+                <!-- NO GESTIONAR -->
+
+                <div class="result-card no-gestionar">
+
+                    <span class="result-label">
+                        NO GESTIONAR
+                    </span>
+
+                    <strong>
+                        {{ resultado.no_gestionar }}
+                    </strong>
+
+                    <small>
+                        Casos incobrables
+                    </small>
+
+                </div>
+
+
+                <!-- TOTAL -->
+
+                <div class="result-card total">
+
+                    <span class="result-label">
+                        TOTAL
+                    </span>
+
+                    <strong>
+                        {{ resultado.total }}
+                    </strong>
+
+                    <small>
+                        Registros procesados
+                    </small>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =============================================
+                 DESCARGA
+            ============================================== -->
+
+            <div class="download-box">
+
+                <div>
+
+                    <strong>
+                        Archivo generado correctamente
+                    </strong>
+
+                    <span>
+                        ASIGNACION_OK_PRUEBA.xlsx
+                    </span>
+
+                </div>
+
+
+                <a
+                    href="/descargar"
+                    class="btn-download"
+                >
+
+                    ↓ Descargar Excel
+
+                </a>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+
+
+        <!-- =================================================
+             ERROR
+        ================================================== -->
+
+        {% if error %}
+
+        <section class="error-card">
+
+            <div class="error-icon">
+                !
+            </div>
+
+            <div>
+
+                <strong>
+                    No se pudo completar la automatización
+                </strong>
+
+                <p>
+                    {{ error }}
+                </p>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+
+
+        <!-- =================================================
+             INFORMACION
+        ================================================== -->
+
+        <div class="info">
+
+            <div class="info-icon">
+                i
+            </div>
+
+            <div>
+
+                <strong>
+                    ¿Cómo funciona?
+                </strong>
+
+                <p>
+                    Seleccioná el Reporte Operativo. El sistema
+                    descargará automáticamente los archivos
+                    actualizados de Google Drive, realizará los
+                    cruces correspondientes y generará el Excel
+                    final con las hojas ASIGNACIÓN OK, FALLECIDOS
+                    y NO GESTIONAR.
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </main>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer>
+
+        Automatización Santander · Dialcore Backoffice
+
+    </footer>
+
+</div>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================== -->
+
+<script>
+
+const inputArchivo =
+    document.getElementById("reporte");
+
+const nombreArchivo =
+    document.getElementById("nombre-archivo");
+
+
+if (inputArchivo) {
+
+    inputArchivo.addEventListener(
+        "change",
+        function () {
+
+            if (this.files.length > 0) {
+
+                nombreArchivo.textContent =
+                    "Archivo seleccionado: " +
+                    this.files[0].name;
+
+                nombreArchivo.classList.add(
+                    "archivo-seleccionado"
+                );
+
+            } else {
+
+                nombreArchivo.textContent =
+                    "Ningún archivo seleccionado";
+
+                nombreArchivo.classList.remove(
+                    "archivo-seleccionado"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+</script>
+
+
+</body>
+
+</html>
+

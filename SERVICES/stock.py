@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 from openpyxl import load_workbook
 
 
@@ -29,6 +28,7 @@ def buscar_ultimo_stock():
             archivos.append(ruta)
 
     if not archivos:
+
         raise FileNotFoundError(
             "No se encontró ningún archivo STOCK."
         )
@@ -49,10 +49,6 @@ def cargar_stock():
     print("========================================")
     print(ruta)
 
-    # ========================================================
-    # ABRIR EXCEL EN MODO SOLO LECTURA
-    # ========================================================
-
     print()
     print("Leyendo STOCK en modo memoria reducida...")
 
@@ -65,7 +61,7 @@ def cargar_stock():
     ws = wb.active
 
     # ========================================================
-    # BUSCAR ENCABEZADOS
+    # ENCABEZADOS
     # ========================================================
 
     encabezados = next(
@@ -82,6 +78,7 @@ def cargar_stock():
     ]
 
     if "NUM_DOC" not in encabezados:
+
         wb.close()
 
         raise KeyError(
@@ -89,6 +86,7 @@ def cargar_stock():
         )
 
     if "FECHA_ASIG_ESTUDIO" not in encabezados:
+
         wb.close()
 
         raise KeyError(
@@ -105,22 +103,31 @@ def cargar_stock():
     )
 
     # ========================================================
-    # LEER SOLO LAS DOS COLUMNAS NECESARIAS
+    # CREAR DICCIONARIO DIRECTAMENTE
     # ========================================================
 
-    documentos = []
-    fechas = []
+    stock = {}
+
+    print()
+    print("Procesando registros del STOCK...")
 
     for fila in ws.iter_rows(
         min_row=2,
         values_only=True
     ):
 
-        dni = (
-            fila[indice_dni]
-            if indice_dni < len(fila)
-            else None
-        )
+        if indice_dni >= len(fila):
+            continue
+
+        dni = fila[indice_dni]
+
+        if dni is None:
+            continue
+
+        dni = str(dni).strip()
+
+        if dni.endswith(".0"):
+            dni = dni[:-2]
 
         fecha = (
             fila[indice_fecha]
@@ -128,73 +135,25 @@ def cargar_stock():
             else None
         )
 
-        documentos.append(dni)
-        fechas.append(fecha)
+        # Guardamos solamente un registro por DNI.
+        #
+        # El cruce posterior necesita la fecha de asignación.
+        # Si aparece varias veces, conservamos la última
+        # información leída.
+
+        stock[dni] = fecha
 
     wb.close()
 
-    # ========================================================
-    # CREAR DATAFRAME
-    # ========================================================
-
-    df = pd.DataFrame({
-        "NUM_DOC": documentos,
-        "FECHA_ASIG_ESTUDIO": fechas
-    })
-
-    # ========================================================
-    # NORMALIZAR DNI
-    # ========================================================
-
-    df["NUM_DOC"] = (
-        df["NUM_DOC"]
-        .astype("string")
-        .str.strip()
-        .str.replace(
-            r"\.0$",
-            "",
-            regex=True
-        )
-    )
-
     print()
     print(
-        "Cantidad de registros:",
-        len(df)
+        "DNI únicos encontrados en STOCK:",
+        len(stock)
     )
 
-    return df
+    return stock
 
 
-def preparar_stock(df_stock):
-
-    columnas_necesarias = [
-        "NUM_DOC",
-        "FECHA_ASIG_ESTUDIO"
-    ]
-
-    for columna in columnas_necesarias:
-
-        if columna not in df_stock.columns:
-
-            raise KeyError(
-                f"No se encontró la columna "
-                f"'{columna}' en STOCK."
-            )
-
-    stock = df_stock[
-        columnas_necesarias
-    ].copy()
-
-    stock["NUM_DOC"] = (
-        stock["NUM_DOC"]
-        .astype("string")
-        .str.strip()
-        .str.replace(
-            r"\.0$",
-            "",
-            regex=True
-        )
-    )
+def preparar_stock(stock):
 
     return stock

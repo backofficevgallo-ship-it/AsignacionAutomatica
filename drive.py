@@ -201,13 +201,9 @@ def buscar_carpeta_drive(nombre_carpeta):
 # BUSCAR ÚLTIMO EXCEL DE UNA CARPETA
 # ============================================================
 
-def buscar_ultimo_excel_drive(carpeta_id):
-
-    print()
-    print("========================================")
-    print("BUSCANDO ARCHIVOS DENTRO DE LA CARPETA")
-    print("========================================")
-    print("ID CARPETA:", carpeta_id)
+def buscar_ultimo_excel_drive(
+    carpeta_id
+):
 
     resultado = drive.files().list(
         q=(
@@ -217,7 +213,8 @@ def buscar_ultimo_excel_drive(carpeta_id):
             "and trashed = false"
         ),
         spaces="drive",
-        pageSize=100,
+        orderBy="modifiedTime desc",
+        pageSize=50,
         fields=(
             "files("
             "id,"
@@ -234,11 +231,16 @@ def buscar_ultimo_excel_drive(carpeta_id):
     )
 
     print()
+    print("========================================")
+    print("BUSCANDO ARCHIVOS DENTRO DE LA CARPETA")
+    print("========================================")
+
+    print(
+        "ID CARPETA:",
+        carpeta_id
+    )
+
     print("ARCHIVOS ENCONTRADOS:")
-
-    if not archivos:
-
-        print(">>> NO SE ENCONTRO NINGUN ARCHIVO <<<")
 
     for archivo in archivos:
 
@@ -259,21 +261,17 @@ def buscar_ultimo_excel_drive(carpeta_id):
 
         print("----------------------------------------")
 
-    # --------------------------------------------------------
-    # SOLO EXCEL
-    # --------------------------------------------------------
+    tipos_excel = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel"
+    ]
 
     archivos_excel = [
         archivo
         for archivo in archivos
-        if archivo.get("name", "")
-        .lower()
-        .endswith(
-            (".xlsx", ".xls")
-        )
+        if archivo.get("mimeType") in tipos_excel
     ]
 
-    print()
     print(
         "CANTIDAD DE EXCEL ENCONTRADOS:",
         len(archivos_excel)
@@ -283,30 +281,7 @@ def buscar_ultimo_excel_drive(carpeta_id):
 
         return None
 
-    # --------------------------------------------------------
-    # ORDENAR POR FECHA
-    # --------------------------------------------------------
-
-    archivos_excel.sort(
-        key=lambda x: x.get(
-            "modifiedTime",
-            ""
-        ),
-        reverse=True
-    )
-
-    archivo = archivos_excel[0]
-
-    print()
-    print(
-        "EXCEL SELECCIONADO:"
-    )
-
-    print(
-        archivo["name"]
-    )
-
-    return archivo
+    return archivos_excel[0]
 
 
 # ============================================================

@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from openpyxl import load_workbook
 
 
 CARPETA_STOCK = "ARCHIVOS/STOCK"
@@ -23,7 +24,7 @@ def buscar_ultimo_stock():
 
         if (
             "stock" in nombre
-            and nombre.endswith((".xlsx", ".xls"))
+            and nombre.endswith(".xlsx")
         ):
             archivos.append(ruta)
 
@@ -49,25 +50,111 @@ def cargar_stock():
     print(ruta)
 
     # ========================================================
-    # LEER SOLAMENTE LAS COLUMNAS NECESARIAS
+    # ABRIR EXCEL EN MODO SOLO LECTURA
     # ========================================================
 
-    df = pd.read_excel(
-        ruta,
-        usecols=[
-            "NUM_DOC",
-            "FECHA_ASIG_ESTUDIO"
-        ]
+    print()
+    print("Leyendo STOCK en modo memoria reducida...")
+
+    wb = load_workbook(
+        filename=ruta,
+        read_only=True,
+        data_only=True
+    )
+
+    ws = wb.active
+
+    # ========================================================
+    # BUSCAR ENCABEZADOS
+    # ========================================================
+
+    encabezados = next(
+        ws.iter_rows(
+            min_row=1,
+            max_row=1,
+            values_only=True
+        )
+    )
+
+    encabezados = [
+        str(x).strip() if x is not None else ""
+        for x in encabezados
+    ]
+
+    if "NUM_DOC" not in encabezados:
+        wb.close()
+
+        raise KeyError(
+            "No se encontró la columna 'NUM_DOC' en STOCK."
+        )
+
+    if "FECHA_ASIG_ESTUDIO" not in encabezados:
+        wb.close()
+
+        raise KeyError(
+            "No se encontró la columna "
+            "'FECHA_ASIG_ESTUDIO' en STOCK."
+        )
+
+    indice_dni = encabezados.index(
+        "NUM_DOC"
+    )
+
+    indice_fecha = encabezados.index(
+        "FECHA_ASIG_ESTUDIO"
     )
 
     # ========================================================
-    # LIMPIAR ENCABEZADOS
+    # LEER SOLO LAS DOS COLUMNAS NECESARIAS
     # ========================================================
 
-    df.columns = (
-        df.columns
-        .astype(str)
+    documentos = []
+    fechas = []
+
+    for fila in ws.iter_rows(
+        min_row=2,
+        values_only=True
+    ):
+
+        dni = (
+            fila[indice_dni]
+            if indice_dni < len(fila)
+            else None
+        )
+
+        fecha = (
+            fila[indice_fecha]
+            if indice_fecha < len(fila)
+            else None
+        )
+
+        documentos.append(dni)
+        fechas.append(fecha)
+
+    wb.close()
+
+    # ========================================================
+    # CREAR DATAFRAME
+    # ========================================================
+
+    df = pd.DataFrame({
+        "NUM_DOC": documentos,
+        "FECHA_ASIG_ESTUDIO": fechas
+    })
+
+    # ========================================================
+    # NORMALIZAR DNI
+    # ========================================================
+
+    df["NUM_DOC"] = (
+        df["NUM_DOC"]
+        .astype("string")
         .str.strip()
+        .str.replace(
+            r"\.0$",
+            "",
+            regex=True
+        )
     )
 
     print()

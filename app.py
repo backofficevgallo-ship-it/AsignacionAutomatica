@@ -750,10 +750,10 @@ def actualizar_archivos_desde_drive():
 
 def ejecutar_automatizacion(ruta_reporte):
 
+    import gc
+
     # ========================================================
     # 1. ACTUALIZAR ARCHIVOS DESDE DRIVE
-    #
-    # NO ACTUALIZA REPORTE OPERATIVO
     # ========================================================
 
     actualizar_archivos_desde_drive()
@@ -785,6 +785,10 @@ def ejecutar_automatizacion(ruta_reporte):
         stock
     )
 
+    # STOCK YA NO SE NECESITA
+    del stock
+    gc.collect()
+
     # ========================================================
     # 5. COLCHON
     # ========================================================
@@ -795,6 +799,10 @@ def ejecutar_automatizacion(ruta_reporte):
         asignacion,
         colchon
     )
+
+    # COLCHON YA NO SE NECESITA
+    del colchon
+    gc.collect()
 
     # ========================================================
     # 6. PAGOS AGOSTO
@@ -807,6 +815,10 @@ def ejecutar_automatizacion(ruta_reporte):
         pagos_agosto
     )
 
+    # PAGOS YA NO SE NECESITAN
+    del pagos_agosto
+    gc.collect()
+
     # ========================================================
     # 7. MORIA
     # ========================================================
@@ -817,6 +829,10 @@ def ejecutar_automatizacion(ruta_reporte):
         asignacion,
         moria
     )
+
+    # MORIA YA NO SE NECESITA
+    del moria
+    gc.collect()
 
     # ========================================================
     # 8. SEPARAR CATEGORIAS
@@ -832,9 +848,14 @@ def ejecutar_automatizacion(ruta_reporte):
     )
 
     # ========================================================
-    # 9. GUARDAR RESULTADO LOCAL
-    #
-    # NO SE SUBE A GOOGLE DRIVE
+    # EL REPORTE YA NO SE NECESITA
+    # ========================================================
+
+    del reporte
+    gc.collect()
+
+    # ========================================================
+    # 9. GUARDAR RESULTADO
     # ========================================================
 
     ruta = guardar_asignacion(

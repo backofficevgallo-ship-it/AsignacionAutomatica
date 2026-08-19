@@ -21,10 +21,6 @@ SCOPES = [
 
 def cargar_credenciales():
 
-    # --------------------------------------------------------
-    # RENDER
-    # --------------------------------------------------------
-
     credenciales_json = os.environ.get(
         "GOOGLE_CREDENTIALS"
     )
@@ -52,10 +48,6 @@ def cargar_credenciales():
                 "credenciales de Google Drive "
                 "desde GOOGLE_CREDENTIALS."
             ) from e
-
-    # --------------------------------------------------------
-    # PC LOCAL
-    # --------------------------------------------------------
 
     archivo_credenciales = (
         "credenciales_drive.json"
@@ -266,6 +258,48 @@ def buscar_ultimo_excel_drive(
 
 
 # ============================================================
+# BUSCAR ÚLTIMO ARCHIVO DE UNA CARPETA
+#
+# Para STOCK, COLCHON, PAGOS y MORIA
+# ============================================================
+
+def buscar_ultimo_archivo_drive(
+    carpeta_id
+):
+
+    resultado = drive.files().list(
+        q=(
+            "'"
+            + carpeta_id
+            + "' in parents "
+            "and trashed = false"
+        ),
+        spaces="drive",
+        orderBy="modifiedTime desc",
+        pageSize=50,
+        fields=(
+            "files("
+            "id,"
+            "name,"
+            "mimeType,"
+            "modifiedTime"
+            ")"
+        )
+    ).execute()
+
+    archivos = resultado.get(
+        "files",
+        []
+    )
+
+    if not archivos:
+
+        return None
+
+    return archivos[0]
+
+
+# ============================================================
 # DESCARGAR ARCHIVO
 # ============================================================
 
@@ -344,7 +378,7 @@ def descargar_archivo_drive(
 
 
 # ============================================================
-# DESCARGAR ÚLTIMO ARCHIVO DE UNA CARPETA
+# DESCARGAR ÚLTIMO EXCEL DE UNA CARPETA
 # ============================================================
 
 def descargar_ultimo_de_carpeta(
@@ -366,17 +400,9 @@ def descargar_ultimo_de_carpeta(
         "========================================"
     )
 
-    # --------------------------------------------------------
-    # BUSCAR CARPETA
-    # --------------------------------------------------------
-
     carpeta_id = buscar_carpeta_drive(
         nombre_carpeta
     )
-
-    # --------------------------------------------------------
-    # BUSCAR ÚLTIMO EXCEL
-    # --------------------------------------------------------
 
     archivo = buscar_ultimo_excel_drive(
         carpeta_id
@@ -389,23 +415,12 @@ def descargar_ultimo_de_carpeta(
             f"en la carpeta '{nombre_carpeta}'."
         )
 
-    # --------------------------------------------------------
-    # CREAR CARPETA LOCAL
-    # --------------------------------------------------------
-
     os.makedirs(
         carpeta_local,
         exist_ok=True
     )
 
-    # --------------------------------------------------------
-    # NOMBRE DEL ARCHIVO
-    # --------------------------------------------------------
-
     nombre_archivo = archivo["name"]
-
-    # Google Drive puede devolver el archivo
-    # con o sin extensión.
 
     if not nombre_archivo.lower().endswith(
         (".xlsx", ".xls")
@@ -423,39 +438,10 @@ def descargar_ultimo_de_carpeta(
 
             nombre_archivo += ".xls"
 
-    # --------------------------------------------------------
-    # RUTA LOCAL
-    # --------------------------------------------------------
-
-    nombre_archivo = archivo["name"]
-
-    # Google Drive puede devolver el archivo sin extensión
-    if not nombre_archivo.lower().endswith((".xlsx", ".xls")):
-
-        if archivo.get("mimeType") == (
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ):
-
-            nombre_archivo += ".xlsx"
-
-        elif archivo.get("mimeType") == (
-            "application/vnd.ms-excel"
-        ):
-
-            nombre_archivo += ".xls"
-
-    # --------------------------------------------------------
-    # SIEMPRE CREAR LA RUTA
-    # --------------------------------------------------------
-
     ruta_local = os.path.join(
         carpeta_local,
         nombre_archivo
     )
-
-    # --------------------------------------------------------
-    # DESCARGAR
-    # --------------------------------------------------------
 
     descargar_archivo_drive(
         archivo,
@@ -464,101 +450,53 @@ def descargar_ultimo_de_carpeta(
 
     return ruta_local
 
+
 # ============================================================
-# DESCARGAR CSV DE STOCK LIGERO
+# DESCARGAR STOCK LIGERO
 # ============================================================
 
 def descargar_stock_ligero():
 
-    nombre_carpeta = "STOCK_LIGERO"
+    carpeta_drive = "STOCK_LIGERO"
     carpeta_local = "ARCHIVOS/STOCK_LIGERO"
 
     print()
     print("========================================")
-    print("BUSCANDO STOCK LIGERO")
+    print("DESCARGANDO STOCK LIGERO")
     print("========================================")
 
-    # Buscar carpeta
     carpeta_id = buscar_carpeta_drive(
-        nombre_carpeta
+        carpeta_drive
     )
 
-    # Buscar archivos
-    resultado = drive.files().list(
-        q=(
-            "'"
-            + carpeta_id
-            + "' in parents "
-            "and trashed = false"
-        ),
-        spaces="drive",
-        orderBy="modifiedTime desc",
-        pageSize=50,
-        fields=(
-            "files("
-            "id,"
-            "name,"
-            "mimeType,"
-            "modifiedTime"
-            ")"
-        )
-    ).execute()
-
-    archivos = resultado.get(
-        "files",
-        []
+    archivo = buscar_ultimo_archivo_drive(
+        carpeta_id
     )
 
-    print()
-    print("ARCHIVOS ENCONTRADOS:")
-
-    for archivo in archivos:
-
-        print(
-            "NOMBRE:",
-            archivo.get("name")
-        )
-
-        print(
-            "TIPO:",
-            archivo.get("mimeType")
-        )
-
-        print(
-            "MODIFICADO:",
-            archivo.get("modifiedTime")
-        )
-
-        print("----------------------------------------")
-
-    # Buscar CSV
-    archivos_csv = [
-        archivo
-        for archivo in archivos
-        if (
-            archivo.get("name", "")
-            .lower()
-            .endswith(".csv")
-        )
-    ]
-
-    if not archivos_csv:
+    if archivo is None:
 
         raise FileNotFoundError(
-            "No se encontró stock_ligero.csv "
+            "No se encontró ningún archivo "
             "en la carpeta STOCK_LIGERO."
         )
-
-    archivo = archivos_csv[0]
 
     os.makedirs(
         carpeta_local,
         exist_ok=True
     )
 
+    nombre_archivo = archivo["name"]
+
+    # El stock ligero es CSV
+    if not nombre_archivo.lower().endswith(
+        ".csv"
+    ):
+
+        nombre_archivo += ".csv"
+
     ruta_local = os.path.join(
         carpeta_local,
-        "stock_ligero.csv"
+        nombre_archivo
     )
 
     descargar_archivo_drive(

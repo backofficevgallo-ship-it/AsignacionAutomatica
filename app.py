@@ -6,7 +6,6 @@ from drive import descargar_ultimo_de_carpeta
 
 from SERVICES.asignacion import crear_base_asignacion
 from SERVICES.asignacion import cruzar_stock
-from SERVICES.stock import cargar_stock
 
 from SERVICES.colchon import cargar_colchon
 from SERVICES.colchon import cruzar_colchon
@@ -16,6 +15,9 @@ from SERVICES.pagos import cruzar_pagos_agosto
 
 from SERVICES.moria import cargar_moria
 from SERVICES.moria import cruzar_moria
+
+from drive import descargar_ultimo_de_carpeta
+from drive import descargar_stock_ligero
 
 
 # ============================================================
@@ -743,7 +745,6 @@ def actualizar_archivos_desde_drive():
         ruta_moria
     )
 
-
 # ============================================================
 # PROCESAR AUTOMATIZACION
 # ============================================================
@@ -775,17 +776,34 @@ def ejecutar_automatizacion(ruta_reporte):
     )
 
     # ========================================================
-    # 4. STOCK
-    # ========================================================
+    # # 4. STOCK LIGERO
+    # # ========================================================
+    
+    ruta_stock_ligero = descargar_stock_ligero()
 
-    stock = cargar_stock()
+    stock = pd.read_csv(
+        ruta_stock_ligero,
+        sep=";",
+        dtype=str
+        )
 
-    asignacion = cruzar_stock(
-        asignacion,
-        stock
-    )
+    stock.columns = (
+        stock.columns
+        .astype(str)
+        .str.strip()
+        .str.replace("\ufeff", "", regex=False)
+        )
 
-    # STOCK YA NO SE NECESITA
+    print()
+    print("COLUMNAS STOCK LIGERO:")
+
+    for columna in stock.columns:
+        print("-", repr(columna))
+
+        asignacion = cruzar_stock(
+            asignacion,
+            stock
+            )
     del stock
     gc.collect()
 
@@ -800,7 +818,6 @@ def ejecutar_automatizacion(ruta_reporte):
         colchon
     )
 
-    # COLCHON YA NO SE NECESITA
     del colchon
     gc.collect()
 
@@ -815,7 +832,6 @@ def ejecutar_automatizacion(ruta_reporte):
         pagos_agosto
     )
 
-    # PAGOS YA NO SE NECESITAN
     del pagos_agosto
     gc.collect()
 
@@ -830,7 +846,6 @@ def ejecutar_automatizacion(ruta_reporte):
         moria
     )
 
-    # MORIA YA NO SE NECESITA
     del moria
     gc.collect()
 
@@ -847,10 +862,6 @@ def ejecutar_automatizacion(ruta_reporte):
         asignacion
     )
 
-    # ========================================================
-    # EL REPORTE YA NO SE NECESITA
-    # ========================================================
-
     del reporte
     gc.collect()
 
@@ -863,10 +874,6 @@ def ejecutar_automatizacion(ruta_reporte):
         fallecidos,
         no_gestionar
     )
-
-    # ========================================================
-    # RESULTADO
-    # ========================================================
 
     resultado = {
         "asignacion": len(asignacion),

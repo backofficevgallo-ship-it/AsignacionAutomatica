@@ -139,21 +139,30 @@ def cruzar_stock(df_asignacion, df_stock):
     # ========================================================
 
     if "NUM_DOC" not in df_stock.columns:
+
         raise KeyError(
             "No se encontró NUM_DOC en STOCK."
         )
 
     if "FECHA_ASIG_ESTUDIO" not in df_stock.columns:
+
         raise KeyError(
             "No se encontró FECHA_ASIG_ESTUDIO en STOCK."
         )
 
     # ========================================================
-    # NORMALIZAR DNI DEL STOCK
+    # NORMALIZAR STOCK
     # ========================================================
 
-    stock_dni = (
-        df_stock["NUM_DOC"]
+    stock = df_stock[
+        [
+            "NUM_DOC",
+            "FECHA_ASIG_ESTUDIO"
+        ]
+    ].copy()
+
+    stock["NUM_DOC"] = (
+        stock["NUM_DOC"]
         .astype("string")
         .str.strip()
         .str.replace(
@@ -164,68 +173,10 @@ def cruzar_stock(df_asignacion, df_stock):
     )
 
     # ========================================================
-    # NORMALIZAR FECHA
+    # NORMALIZAR DNI ASIGNACION
     # ========================================================
 
-    stock_fecha = pd.to_datetime(
-        df_stock["FECHA_ASIG_ESTUDIO"],
-        dayfirst=True,
-        errors="coerce"
-    )
-
-    # ========================================================
-    # CONTAR DNI CON MÚLTIPLES REGISTROS
-    # ========================================================
-
-    dnis_multiples = (
-        stock_dni.value_counts()
-        .gt(1)
-        .sum()
-    )
-
-    # ========================================================
-    # CREAR TABLA MÍNIMA PARA EL CRUCE
-    # ========================================================
-
-    stock = pd.DataFrame({
-        "DNI": stock_dni,
-        "FECHA": stock_fecha
-    })
-
-    # ========================================================
-    # TOMAR LA FECHA MÁS RECIENTE POR DNI
-    # ========================================================
-
-    stock = (
-        stock
-        .dropna(subset=["DNI"])
-        .sort_values(
-            "FECHA",
-            ascending=False,
-            na_position="last"
-        )
-        .drop_duplicates(
-            subset="DNI",
-            keep="first"
-        )
-    )
-
-    # ========================================================
-    # MAPA DNI → FECHA MÁS RECIENTE
-    # ========================================================
-
-    mapa = dict(
-        zip(
-            stock["DNI"],
-            stock["FECHA"]
-        )
-    )
-
-    # ========================================================
-    # NORMALIZAR DNI DEL REPORTE
-    # ========================================================
-
-    dni_asignacion = (
+    df_asignacion["DNI"] = (
         df_asignacion["DNI"]
         .astype("string")
         .str.strip()
@@ -237,11 +188,25 @@ def cruzar_stock(df_asignacion, df_stock):
     )
 
     # ========================================================
+    # CREAR MAPA
+    # ========================================================
+
+    mapa = (
+        stock
+        .drop_duplicates(
+            subset=["NUM_DOC"],
+            keep="first"
+        )
+        .set_index("NUM_DOC")
+        ["FECHA_ASIG_ESTUDIO"]
+    )
+
+    # ========================================================
     # CRUCE
     # ========================================================
 
     df_asignacion["ASIGNACION"] = (
-        dni_asignacion.map(mapa)
+        df_asignacion["DNI"].map(mapa)
     )
 
     # ========================================================
@@ -257,6 +222,13 @@ def cruzar_stock(df_asignacion, df_stock):
     no_encontrados = (
         df_asignacion["ASIGNACION"]
         .isna()
+        .sum()
+    )
+
+    dnis_multiples = (
+        stock["NUM_DOC"]
+        .value_counts()
+        .gt(1)
         .sum()
     )
 

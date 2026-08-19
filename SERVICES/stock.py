@@ -78,46 +78,55 @@ def normalizar_dni(valor):
 def convertir_fecha_excel(valor):
 
     if valor is None or valor == "":
-        return None
+        return 0
 
     texto = str(valor).strip()
 
     if not texto:
-        return None
+        return 0
 
-    # --------------------------------------------------------
-    # SERIAL EXCEL
-    # --------------------------------------------------------
+    # ========================================================
+    # FECHA SERIAL DE EXCEL
+    #
+    # La mayoría de las fechas del STOCK vienen como número.
+    # No usamos pandas para convertirlas.
+    # ========================================================
 
     try:
 
         numero = float(texto)
 
         if numero > 0:
+            return numero
 
-            return (
-                pd.Timestamp("1899-12-30")
-                + pd.Timedelta(days=numero)
-            )
-
-    except Exception:
+    except (ValueError, TypeError):
         pass
 
-    # --------------------------------------------------------
+    # ========================================================
     # FECHA TEXTUAL
-    # --------------------------------------------------------
+    #
+    # Solo usamos pandas si realmente no es un número.
+    # ========================================================
 
     try:
 
-        return pd.to_datetime(
+        fecha = pd.to_datetime(
             texto,
             dayfirst=True,
             errors="coerce"
         )
 
+        if pd.isna(fecha):
+            return 0
+
+        # Convertimos la fecha a número comparable
+        return (
+            fecha - pd.Timestamp("1899-12-30")
+        ).total_seconds() / 86400
+
     except Exception:
 
-        return None
+        return 0
 
 
 # ============================================================
@@ -739,37 +748,27 @@ def cargar_stock():
                 )
 
                 # =================================================
-                # CONSERVAR FECHA MÁS RECIENTE
-                # =================================================
-
+                # # CONSERVAR FECHA MÁS RECIENTE
+                # # =================================================
+                
                 anterior = stock_dict.get(
                     dni
-                )
-
+                    )
+                
                 if anterior is None:
-
                     stock_dict[dni] = (
                         fecha_original,
                         fecha_nueva
                     )
-
                 else:
 
                     fecha_actual = anterior[1]
-
-                    if (
-                        pd.notna(fecha_nueva)
-                        and (
-                            fecha_actual is None
-                            or pd.isna(fecha_actual)
-                            or fecha_nueva > fecha_actual
-                        )
-                    ):
+                    if fecha_nueva > fecha_actual:
 
                         stock_dict[dni] = (
                             fecha_original,
                             fecha_nueva
-                        )
+                            )
 
                 contador += 1
 

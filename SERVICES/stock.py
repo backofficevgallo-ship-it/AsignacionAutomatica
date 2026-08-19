@@ -2,13 +2,14 @@ import os
 import re
 import zipfile
 import xml.etree.ElementTree as ET
+import datetime
 
 import pandas as pd
 
 
 CARPETA_STOCK = "ARCHIVOS/STOCK"
 
-NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 
 
 # ============================================================
@@ -31,12 +32,11 @@ def buscar_ultimo_stock():
             archivo
         )
 
-        if not os.path.isfile(ruta):
-            continue
-
-        nombre = archivo.lower().strip()
-
-        if nombre.endswith(".xlsx") and "stock" in nombre:
+        if (
+            os.path.isfile(ruta)
+            and archivo.lower().endswith(".xlsx")
+            and "stock" in archivo.lower()
+        ):
             archivos.append(ruta)
 
     if not archivos:
@@ -56,40 +56,32 @@ def buscar_ultimo_stock():
 
 def normalizar_dni(valor):
 
-    if valor is None:
-        return ""
-
-    texto = str(valor).strip()
+    texto = str(valor or "").strip()
 
     if texto.endswith(".0"):
         texto = texto[:-2]
 
-    return "".join(
-        caracter
-        for caracter in texto
-        if caracter.isdigit()
+    return re.sub(
+        r"\D",
+        "",
+        texto
     )
 
 
 # ============================================================
-# CONVERTIR FECHA EXCEL
+# CONVERTIR FECHA
 # ============================================================
 
 def convertir_fecha_excel(valor):
 
-    if valor is None:
-        return 0
-
-    texto = str(valor).strip()
+    texto = str(valor or "").strip()
 
     if not texto:
         return 0
 
-    # ========================================================
-    # FECHA SERIAL DE EXCEL
-    # ========================================================
-
+    # Fecha serial de Excel
     try:
+
         numero = float(texto)
 
         if numero > 0:
@@ -98,14 +90,7 @@ def convertir_fecha_excel(valor):
     except (ValueError, TypeError):
         pass
 
-    # ========================================================
-    # FECHA TEXTUAL
-    #
-    # IMPORTANTE:
-    # No usamos pandas.
-    # Convertimos manualmente DD/MM/YYYY.
-    # ========================================================
-
+    # Fecha textual
     try:
 
         partes = texto.replace("-", "/").split("/")
@@ -118,9 +103,6 @@ def convertir_fecha_excel(valor):
 
             if anio < 100:
                 anio += 2000
-
-            # Fecha serial aproximada de Excel
-            import datetime
 
             fecha = datetime.datetime(
                 anio,
@@ -136,7 +118,7 @@ def convertir_fecha_excel(valor):
 
             return (
                 fecha - base
-            ).total_seconds() / 86400
+            ).days
 
     except Exception:
         pass
@@ -145,408 +127,107 @@ def convertir_fecha_excel(valor):
 
 
 # ============================================================
-# OBTENER LETRA DE COLUMNA
+# COLUMNA EXCEL
 # ============================================================
 
-def obtener_referencia_columna(referencia):
+def columna_excel(referencia):
 
     match = re.match(
         r"([A-Z]+)",
         referencia.upper()
     )
 
-    if not match:
-        return ""
-
-    return match.group(1)
+    return match.group(1) if match else ""
 
 
 # ============================================================
-# LEER VALOR CRUDO DE CELDA
+# SHARED STRINGS
 #
-# IMPORTANTE:
-# Si es shared string devolvemos:
-#
-# ("SHARED", indice)
-#
-# No cargamos sharedStrings completo.
+# Solo se cargan las necesarias.
 # ============================================================
 
-def obtener_valor_crudo(celda):
+def cargar_shared_strings(zf):
 
-    tipo = celda.attrib.get("t")
+    archivo = "xl/sharedStrings.xml"
 
-    nodo_v = celda.find(
-        f"{{{NS_MAIN}}}v"
-    )
+    if archivo not in zf.namelist():
+        return []
 
-    if nodo_v is not None:
+    resultado = []
 
-        valor = nodo_v.text or ""
+    with zf.open(archivo) as xml:
 
-        if tipo == "s":
+        for _, elemento in ET.iterparse(
+            xml,
+            events=("end",)
+        ):
 
-            try:
+            if not elemento.tag.endswith("}si"):
+                continue
 
-                return (
-                    "SHARED",
-                    int(valor)
-                )
-
-            except Exception:
-
-                return (
-                    "SHARED",
-                    -1
-                )
-
-        if tipo == "b":
-
-            return (
-                "1"
-                if valor == "1"
-                else "0"
+            texto = "".join(
+                nodo.text or ""
+                for nodo in elemento.iter()
+                if nodo.tag.endswith("}t")
             )
 
-        return valor
-
-    # ========================================================
-    # INLINE STRING
-    # ========================================================
-
-    nodo_is = celda.find(
-        f"{{{NS_MAIN}}}is"
-    )
-
-    if nodo_is is not None:
-
-        textos = []
-
-        for nodo in nodo_is.iter():
-
-            if nodo.tag.endswith("}t"):
-
-                if nodo.text:
-                    textos.append(
-                        nodo.text
-                    )
-
-        return "".join(textos)
-
-    return ""
-
-
-# ============================================================
-# OBTENER VALOR DE SHARED STRING ESPECÍFICO
-#
-# Se usa solamente para encabezados.
-# ============================================================
-
-def buscar_shared_string(
-    zf,
-    indice_buscado
-):
-
-    if indice_buscado < 0:
-        return ""
-
-    archivo = "xl/sharedStrings.xml"
-
-    if archivo not in zf.namelist():
-        return ""
-
-    indice_actual = 0
-
-    with zf.open(archivo) as archivo_xml:
-
-        for evento, elemento in ET.iterparse(
-            archivo_xml,
-            events=("end",)
-        ):
-
-            if not elemento.tag.endswith("}si"):
-                continue
-
-            if indice_actual == indice_buscado:
-
-                textos = []
-
-                for nodo in elemento.iter():
-
-                    if nodo.tag.endswith("}t"):
-
-                        if nodo.text:
-                            textos.append(
-                                nodo.text
-                            )
-
-                return "".join(textos)
-
-            indice_actual += 1
+            resultado.append(texto)
 
             elemento.clear()
-
-    return ""
-
-
-# ============================================================
-# OBTENER HOJA PRINCIPAL
-# ============================================================
-
-def buscar_hoja(zf):
-
-    hojas = [
-        nombre
-        for nombre in zf.namelist()
-        if nombre.startswith(
-            "xl/worksheets/"
-        )
-        and nombre.endswith(".xml")
-    ]
-
-    if not hojas:
-
-        raise FileNotFoundError(
-            "No se encontró ninguna hoja XML dentro del STOCK."
-        )
-
-    return hojas[0]
-
-
-# ============================================================
-# LEER ENCABEZADOS
-# ============================================================
-
-def leer_encabezados(
-    zf,
-    hoja
-):
-
-    with zf.open(hoja) as archivo_xml:
-
-        for evento, elemento in ET.iterparse(
-            archivo_xml,
-            events=("end",)
-        ):
-
-            if not elemento.tag.endswith("}row"):
-                continue
-
-            encabezados = {}
-
-            for celda in elemento:
-
-                if not celda.tag.endswith("}c"):
-                    continue
-
-                referencia = celda.attrib.get(
-                    "r",
-                    ""
-                )
-
-                columna = obtener_referencia_columna(
-                    referencia
-                )
-
-                valor = obtener_valor_crudo(
-                    celda
-                )
-
-                # --------------------------------------------
-                # RESOLVER SHARED STRING DEL ENCABEZADO
-                # --------------------------------------------
-
-                if (
-                    isinstance(valor, tuple)
-                    and valor[0] == "SHARED"
-                ):
-
-                    valor = buscar_shared_string(
-                        zf,
-                        valor[1]
-                    )
-
-                encabezados[columna] = (
-                    str(valor)
-                    .strip()
-                    .upper()
-                )
-
-            elemento.clear()
-
-            return encabezados
-
-    return {}
-
-
-# ============================================================
-# PRIMERA PASADA:
-# DETECTAR COLUMNAS SHARED
-#
-# Solo guardamos los índices de shared strings que realmente
-# aparecen en las dos columnas que necesitamos.
-# ============================================================
-
-def obtener_indices_shared_necesarios(
-    zf,
-    hoja,
-    indice_dni,
-    indice_fecha
-):
-
-    indices = set()
-
-    with zf.open(hoja) as archivo_xml:
-
-        for evento, elemento in ET.iterparse(
-            archivo_xml,
-            events=("end",)
-        ):
-
-            if not elemento.tag.endswith("}row"):
-                continue
-
-            for celda in elemento:
-
-                if not celda.tag.endswith("}c"):
-                    continue
-
-                referencia = celda.attrib.get(
-                    "r",
-                    ""
-                )
-
-                columna = obtener_referencia_columna(
-                    referencia
-                )
-
-                if columna not in (
-                    indice_dni,
-                    indice_fecha
-                ):
-                    continue
-
-                valor = obtener_valor_crudo(
-                    celda
-                )
-
-                if (
-                    isinstance(valor, tuple)
-                    and valor[0] == "SHARED"
-                ):
-
-                    if valor[1] >= 0:
-                        indices.add(
-                            valor[1]
-                        )
-
-            elemento.clear()
-
-    return indices
-
-
-# ============================================================
-# CARGAR SOLO SHARED STRINGS NECESARIOS
-#
-# NO cargamos todo sharedStrings.xml.
-# Solo guardamos los índices que realmente aparecen en
-# NUM_DOC / FECHA_ASIG_ESTUDIO.
-# ============================================================
-
-def cargar_shared_strings_necesarios(
-    zf,
-    indices_necesarios
-):
-
-    resultado = {}
-
-    if not indices_necesarios:
-        return resultado
-
-    archivo = "xl/sharedStrings.xml"
-
-    if archivo not in zf.namelist():
-        return resultado
-
-    indice_actual = 0
-
-    with zf.open(archivo) as archivo_xml:
-
-        for evento, elemento in ET.iterparse(
-            archivo_xml,
-            events=("end",)
-        ):
-
-            if not elemento.tag.endswith("}si"):
-                continue
-
-            if indice_actual in indices_necesarios:
-
-                textos = []
-
-                for nodo in elemento.iter():
-
-                    if nodo.tag.endswith("}t"):
-
-                        if nodo.text:
-                            textos.append(
-                                nodo.text
-                            )
-
-                resultado[indice_actual] = (
-                    "".join(textos)
-                )
-
-            indice_actual += 1
-
-            elemento.clear()
-
-            # -----------------------------------------------
-            # Si ya encontramos todos, podemos terminar.
-            # -----------------------------------------------
-
-            if len(resultado) == len(
-                indices_necesarios
-            ):
-                break
 
     return resultado
 
 
 # ============================================================
-# RESOLVER VALOR
+# VALOR DE CELDA
 # ============================================================
 
-def resolver_valor(
-    valor,
-    shared_strings
-):
+def valor_celda(celda, shared):
 
-    if (
-        isinstance(valor, tuple)
-        and valor[0] == "SHARED"
-    ):
+    tipo = celda.attrib.get("t")
 
-        return shared_strings.get(
-            valor[1],
-            ""
+    nodo = celda.find(
+        f"{{{NS}}}v"
+    )
+
+    if nodo is not None:
+
+        valor = nodo.text or ""
+
+        if tipo == "s":
+
+            try:
+                return shared[int(valor)]
+
+            except Exception:
+                return ""
+
+        return valor
+
+    # INLINE STRING
+
+    nodo = celda.find(
+        f"{{{NS}}}is"
+    )
+
+    if nodo is not None:
+
+        return "".join(
+            nodo.text or ""
+            for nodo in nodo.iter()
+            if nodo.tag.endswith("}t")
         )
 
-    return valor
+    return ""
 
 
 # ============================================================
 # CARGAR STOCK
 #
-# ESTRATEGIA:
+# SOLO LEE:
 #
-# 1. Abrir XLSX.
-# 2. Leer encabezados.
-# 3. Detectar shared strings necesarios.
-# 4. Cargar solamente esos shared strings.
-# 5. Recorrer nuevamente las filas.
-#
-# No se carga el STOCK completo en pandas.
+# NUM_DOC
+# FECHA_ASIG_ESTUDIO
 # ============================================================
 
 def cargar_stock():
@@ -557,235 +238,143 @@ def cargar_stock():
     print("========================================")
     print("STOCK ENCONTRADO")
     print("========================================")
-
     print(ruta)
 
-    print()
-    print("Leyendo STOCK con XML de bajo consumo...")
+    with zipfile.ZipFile(ruta, "r") as zf:
 
-    stock_dict = {}
+        hojas = [
+            x
+            for x in zf.namelist()
+            if x.startswith("xl/worksheets/")
+            and x.endswith(".xml")
+        ]
 
-    contador = 0
+        if not hojas:
+            raise FileNotFoundError(
+                "No se encontró la hoja del STOCK."
+            )
 
-    with zipfile.ZipFile(
-        ruta,
-        "r"
-    ) as zf:
-
-        # ====================================================
-        # HOJA
-        # ====================================================
-
-        hoja = buscar_hoja(zf)
+        hoja = hojas[0]
 
         print()
-        print(
-            "Hoja utilizada:",
-            hoja
-        )
+        print("Leyendo solamente NUM_DOC y FECHA_ASIG_ESTUDIO...")
+        print("Hoja utilizada:", hoja)
 
-        # ====================================================
-        # ENCABEZADOS
-        # ====================================================
+        shared = cargar_shared_strings(zf)
 
-        encabezados = leer_encabezados(
-            zf,
-            hoja
-        )
+        stock_dict = {}
 
         indice_dni = None
         indice_fecha = None
 
-        for columna, nombre in encabezados.items():
+        contador = 0
 
-            if nombre == "NUM_DOC":
+        with zf.open(hoja) as xml:
 
-                indice_dni = columna
-
-            elif nombre == "FECHA_ASIG_ESTUDIO":
-
-                indice_fecha = columna
-
-        if indice_dni is None:
-
-            raise KeyError(
-                "No se encontró la columna NUM_DOC en STOCK."
-            )
-
-        if indice_fecha is None:
-
-            raise KeyError(
-                "No se encontró la columna "
-                "FECHA_ASIG_ESTUDIO en STOCK."
-            )
-
-        print()
-        print(
-            "Columnas encontradas:"
-        )
-
-        print("- NUM_DOC")
-        print("- FECHA_ASIG_ESTUDIO")
-
-        # ====================================================
-        # DETECTAR SHARED STRINGS NECESARIOS
-        # ====================================================
-
-        print()
-        print(
-            "Analizando valores necesarios del STOCK..."
-        )
-
-        indices_shared = (
-            obtener_indices_shared_necesarios(
-                zf,
-                hoja,
-                indice_dni,
-                indice_fecha
-            )
-        )
-
-        print(
-            "Shared strings necesarios:",
-            len(indices_shared)
-        )
-
-        # ====================================================
-        # CARGAR SOLO LOS SHARED NECESARIOS
-        # ====================================================
-
-        shared_strings = (
-            cargar_shared_strings_necesarios(
-                zf,
-                indices_shared
-            )
-        )
-
-        print(
-            "Shared strings cargados:",
-            len(shared_strings)
-        )
-
-        # ====================================================
-        # SEGUNDA PASADA
-        # PROCESAR STOCK
-        # ====================================================
-
-        with zf.open(hoja) as archivo_xml:
-
-            for evento, elemento in ET.iterparse(
-                archivo_xml,
+            for _, fila in ET.iterparse(
+                xml,
                 events=("end",)
             ):
 
-                if not elemento.tag.endswith("}row"):
+                if not fila.tag.endswith("}row"):
                     continue
 
-                # ------------------------------------------------
-                # SALTAR ENCABEZADO
-                # ------------------------------------------------
+                # =================================================
+                # PRIMERA FILA = ENCABEZADOS
+                # =================================================
 
-                if contador == 0:
+                if indice_dni is None:
 
-                    # No usamos contador para detectar realmente
-                    # el encabezado porque puede haber filas vacías.
-                    pass
+                    for celda in fila:
+
+                        if not celda.tag.endswith("}c"):
+                            continue
+
+                        columna = columna_excel(
+                            celda.attrib.get("r", "")
+                        )
+
+                        nombre = valor_celda(
+                            celda,
+                            shared
+                        ).strip().upper()
+
+                        if nombre == "NUM_DOC":
+                            indice_dni = columna
+
+                        elif nombre == "FECHA_ASIG_ESTUDIO":
+                            indice_fecha = columna
+
+                    if indice_dni is None:
+                        raise KeyError(
+                            "No se encontró NUM_DOC en STOCK."
+                        )
+
+                    if indice_fecha is None:
+                        raise KeyError(
+                            "No se encontró FECHA_ASIG_ESTUDIO en STOCK."
+                        )
+
+                    print()
+                    print("Columnas encontradas:")
+                    print("- NUM_DOC")
+                    print("- FECHA_ASIG_ESTUDIO")
+
+                    fila.clear()
+                    continue
+
+                # =================================================
+                # SOLO LEER LAS DOS COLUMNAS
+                # =================================================
 
                 dni = ""
                 fecha_original = ""
 
-                for celda in elemento:
+                for celda in fila:
 
                     if not celda.tag.endswith("}c"):
                         continue
 
-                    referencia = celda.attrib.get(
-                        "r",
-                        ""
-                    )
-
-                    columna = obtener_referencia_columna(
-                        referencia
+                    columna = columna_excel(
+                        celda.attrib.get("r", "")
                     )
 
                     if columna == indice_dni:
 
-                        valor = obtener_valor_crudo(
-                            celda
-                        )
-
-                        valor = resolver_valor(
-                            valor,
-                            shared_strings
-                        )
-
                         dni = normalizar_dni(
-                            valor
+                            valor_celda(
+                                celda,
+                                shared
+                            )
                         )
 
                     elif columna == indice_fecha:
 
-                        valor = obtener_valor_crudo(
-                            celda
+                        fecha_original = valor_celda(
+                            celda,
+                            shared
                         )
-
-                        valor = resolver_valor(
-                            valor,
-                            shared_strings
-                        )
-
-                        fecha_original = valor
-
-                # ------------------------------------------------
-                # EVITAR PROCESAR EL ENCABEZADO
-                # ------------------------------------------------
-
-                if dni.upper() == "NUM_DOC":
-
-                    elemento.clear()
-                    continue
-
-                # ------------------------------------------------
-                # DNI VACÍO
-                # ------------------------------------------------
 
                 if not dni:
 
-                    elemento.clear()
+                    fila.clear()
                     continue
 
-                # ------------------------------------------------
-                # FECHA
-                # ------------------------------------------------
-
-                fecha_nueva = convertir_fecha_excel(
+                fecha = convertir_fecha_excel(
                     fecha_original
                 )
 
-                # =================================================
-                # # CONSERVAR FECHA MÁS RECIENTE
-                # # =================================================
-                
-                anterior = stock_dict.get(
-                    dni
-                    )
-                
-                if anterior is None:
+                anterior = stock_dict.get(dni)
+
+                if (
+                    anterior is None
+                    or fecha > anterior[1]
+                ):
 
                     stock_dict[dni] = (
                         fecha_original,
-                        fecha_nueva
+                        fecha
                     )
-                else:
-
-                    fecha_actual = anterior[1]
-                    
-                    if fecha_nueva > fecha_actual:
-
-                        stock_dict[dni] = (
-                            fecha_original,
-                            fecha_nueva
-                            )
 
                 contador += 1
 
@@ -798,60 +387,31 @@ def cargar_stock():
                         len(stock_dict)
                     )
 
-                # ------------------------------------------------
-                # LIBERAR XML
-                # ------------------------------------------------
-
-                elemento.clear()
-
-    # ============================================================
-    # RESULTADOS
-    # ============================================================
+                fila.clear()
 
     print()
-    print(
-        "Registros procesados:",
-        contador
-    )
-
-    print(
-        "DNI únicos:",
-        len(stock_dict)
-    )
+    print("Registros procesados:", contador)
+    print("DNI únicos:", len(stock_dict))
 
     # ============================================================
     # DATAFRAME FINAL
     # ============================================================
 
-    documentos = []
-    fechas = []
-
-    for dni, valores in stock_dict.items():
-
-        documentos.append(dni)
-
-        fechas.append(
-            valores[0]
-        )
-
-    df = pd.DataFrame({
-        "NUM_DOC": documentos,
-        "FECHA_ASIG_ESTUDIO": fechas
-    })
-
-    # ============================================================
-    # RESULTADO
-    # ============================================================
+    df = pd.DataFrame(
+        [
+            {
+                "NUM_DOC": dni,
+                "FECHA_ASIG_ESTUDIO": valores[0]
+            }
+            for dni, valores in stock_dict.items()
+        ]
+    )
 
     print()
     print("========================================")
     print("STOCK PROCESADO")
     print("========================================")
-
-    print(
-        "Registros finales:",
-        len(df)
-    )
+    print("Registros finales:", len(df))
 
     return df
 
@@ -862,23 +422,20 @@ def cargar_stock():
 
 def preparar_stock(df_stock):
 
-    columnas_necesarias = [
+    columnas = [
         "NUM_DOC",
         "FECHA_ASIG_ESTUDIO"
     ]
 
-    for columna in columnas_necesarias:
+    for columna in columnas:
 
         if columna not in df_stock.columns:
 
             raise KeyError(
-                f"No se encontró la columna "
-                f"'{columna}' en STOCK."
+                f"No se encontró la columna '{columna}' en STOCK."
             )
 
-    stock = df_stock[
-        columnas_necesarias
-    ].copy()
+    stock = df_stock[columnas].copy()
 
     stock["NUM_DOC"] = (
         stock["NUM_DOC"]

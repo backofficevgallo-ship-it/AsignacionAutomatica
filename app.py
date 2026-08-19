@@ -687,7 +687,7 @@ def actualizar_archivos_desde_drive():
     # --------------------------------------------------------
 
     ruta_stock = descargar_ultimo_de_carpeta(
-        "Stock",
+        "STOCK",
         CARPETA_STOCK
     )
 
@@ -696,7 +696,7 @@ def actualizar_archivos_desde_drive():
     # --------------------------------------------------------
 
     ruta_colchon = descargar_ultimo_de_carpeta(
-        "Colchon",
+        "COLCHON",
         CARPETA_COLCHON
     )
 
@@ -705,7 +705,7 @@ def actualizar_archivos_desde_drive():
     # --------------------------------------------------------
 
     ruta_pagos = descargar_ultimo_de_carpeta(
-        "Pagos",
+        "PAGOS",
         CARPETA_PAGOS
     )
 
@@ -714,7 +714,7 @@ def actualizar_archivos_desde_drive():
     # --------------------------------------------------------
 
     ruta_moria = descargar_ultimo_de_carpeta(
-        "Moria",
+        "MORIA",
         CARPETA_MORIA
     )
 

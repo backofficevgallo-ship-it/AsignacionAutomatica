@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-from openpyxl import load_workbook
 
 
 CARPETA_STOCK = "ARCHIVOS/STOCK"
@@ -51,7 +50,7 @@ def buscar_ultimo_stock():
 
 def normalizar_dni(valor):
 
-    if valor is None:
+    if pd.isna(valor):
         return ""
 
     texto = str(valor).strip()
@@ -69,30 +68,10 @@ def normalizar_dni(valor):
 
 
 # ============================================================
-# CONVERTIR FECHA
-# ============================================================
-
-def convertir_fecha(valor):
-
-    if valor is None:
-        return pd.NaT
-
-    return pd.to_datetime(
-        valor,
-        dayfirst=True,
-        errors="coerce"
-    )
-
-
-# ============================================================
 # CARGAR STOCK
 #
-# IMPORTANTE:
-# NO CARGAMOS TODO EL EXCEL EN MEMORIA.
-#
-# Nos quedamos directamente con:
-#
-# DNI -> FECHA_ASIG_ESTUDIO MÁS RECIENTE
+# Se utiliza Calamine para evitar el alto consumo de memoria
+# de openpyxl al abrir el archivo STOCK en Render.
 # ============================================================
 
 def cargar_stock():
@@ -106,205 +85,100 @@ def cargar_stock():
     print(ruta)
 
     print()
-    print("Leyendo STOCK en modo memoria reducida...")
+    print("Leyendo STOCK con Calamine...")
 
-    wb = load_workbook(
-        filename=ruta,
-        read_only=True,
-        data_only=True
+    # ========================================================
+    # LEER SOLAMENTE LAS DOS COLUMNAS NECESARIAS
+    # ========================================================
+
+    df_stock = pd.read_excel(
+        ruta,
+        engine="calamine",
+        usecols=[
+            "NUM_DOC",
+            "FECHA_ASIG_ESTUDIO"
+        ]
     )
 
-    try:
-
-        ws = wb.active
-
-        # ====================================================
-        # ENCABEZADOS
-        # ====================================================
-
-        encabezados = next(
-            ws.iter_rows(
-                min_row=1,
-                max_row=1,
-                values_only=True
-            )
-        )
-
-        encabezados = [
-            str(valor).strip()
-            if valor is not None
-            else ""
-            for valor in encabezados
-        ]
-
-        if "NUM_DOC" not in encabezados:
-
-            raise KeyError(
-                "No se encontró la columna 'NUM_DOC' en STOCK."
-            )
-
-        if "FECHA_ASIG_ESTUDIO" not in encabezados:
-
-            raise KeyError(
-                "No se encontró la columna "
-                "'FECHA_ASIG_ESTUDIO' en STOCK."
-            )
-
-        indice_dni = encabezados.index(
-            "NUM_DOC"
-        )
-
-        indice_fecha = encabezados.index(
-            "FECHA_ASIG_ESTUDIO"
-        )
-
-        print()
-        print(
-            "Columna NUM_DOC:",
-            indice_dni + 1
-        )
-
-        print(
-            "Columna FECHA_ASIG_ESTUDIO:",
-            indice_fecha + 1
-        )
-
-        # ====================================================
-        # DICCIONARIO
-        #
-        # Solamente guardamos:
-        #
-        # DNI -> fecha más reciente
-        # ====================================================
-
-        stock_dict = {}
-
-        contador = 0
-
-        print()
-        print("Procesando registros del STOCK...")
-
-        # ----------------------------------------------------
-        # IMPORTANTE:
-        # Solo leemos las columnas necesarias.
-        # ----------------------------------------------------
-
-        columna_minima = min(
-            indice_dni,
-            indice_fecha
-        ) + 1
-
-        columna_maxima = max(
-            indice_dni,
-            indice_fecha
-        ) + 1
-
-        for fila in ws.iter_rows(
-            min_row=2,
-            min_col=columna_minima,
-            max_col=columna_maxima,
-            values_only=True
-        ):
-
-            contador += 1
-
-            posicion_dni = (
-                indice_dni + 1 - columna_minima
-            )
-
-            posicion_fecha = (
-                indice_fecha + 1 - columna_minima
-            )
-
-            dni = normalizar_dni(
-                fila[posicion_dni]
-            )
-
-            if not dni:
-                continue
-
-            fecha_original = fila[
-                posicion_fecha
-            ]
-
-            fecha = convertir_fecha(
-                fecha_original
-            )
-
-            # ------------------------------------------------
-            # Si ya existe el DNI, conservar solamente
-            # la fecha más reciente.
-            # ------------------------------------------------
-
-            if dni not in stock_dict:
-
-                stock_dict[dni] = (
-                    fecha_original,
-                    fecha
-                )
-
-            else:
-
-                fecha_actual = stock_dict[dni][1]
-
-                # Si la nueva fecha es válida y es más reciente
-                if (
-                    pd.notna(fecha)
-                    and (
-                        pd.isna(fecha_actual)
-                        or fecha > fecha_actual
-                    )
-                ):
-
-                    stock_dict[dni] = (
-                        fecha_original,
-                        fecha
-                    )
-
-            # ------------------------------------------------
-            # Mostrar progreso cada 100.000 registros
-            # ------------------------------------------------
-
-            if contador % 100000 == 0:
-
-                print(
-                    "Registros procesados:",
-                    contador,
-                    "| DNI únicos:",
-                    len(stock_dict)
-                )
-
-        print()
-        print(
-            "Registros procesados:",
-            contador
-        )
-
-        print(
-            "DNI únicos:",
-            len(stock_dict)
-        )
-
-    finally:
-
-        wb.close()
-
     # ========================================================
-    # CREAR DATAFRAME PEQUEÑO
+    # VERIFICAR COLUMNAS
     # ========================================================
 
-    documentos = []
-    fechas = []
+    if "NUM_DOC" not in df_stock.columns:
+        raise KeyError(
+            "No se encontró la columna 'NUM_DOC' en STOCK."
+        )
 
-    for dni, valores in stock_dict.items():
+    if "FECHA_ASIG_ESTUDIO" not in df_stock.columns:
+        raise KeyError(
+            "No se encontró la columna "
+            "'FECHA_ASIG_ESTUDIO' en STOCK."
+        )
 
-        documentos.append(dni)
-        fechas.append(valores[0])
+    print()
+    print("Columnas encontradas:")
+    print("- NUM_DOC")
+    print("- FECHA_ASIG_ESTUDIO")
 
-    df = pd.DataFrame({
-        "NUM_DOC": documentos,
-        "FECHA_ASIG_ESTUDIO": fechas
-    })
+    # ========================================================
+    # NORMALIZAR DNI
+    # ========================================================
+
+    df_stock["NUM_DOC"] = (
+        df_stock["NUM_DOC"]
+        .apply(normalizar_dni)
+    )
+
+    # ========================================================
+    # ELIMINAR DNI VACÍOS
+    # ========================================================
+
+    df_stock = df_stock[
+        df_stock["NUM_DOC"] != ""
+    ].copy()
+
+    # ========================================================
+    # NORMALIZAR FECHA
+    # ========================================================
+
+    df_stock["FECHA_ASIG_ESTUDIO"] = pd.to_datetime(
+        df_stock["FECHA_ASIG_ESTUDIO"],
+        dayfirst=True,
+        errors="coerce"
+    )
+
+    # ========================================================
+    # ORDENAR POR FECHA
+    #
+    # El más reciente queda primero.
+    # ========================================================
+
+    df_stock = df_stock.sort_values(
+        "FECHA_ASIG_ESTUDIO",
+        ascending=False,
+        na_position="last"
+    )
+
+    # ========================================================
+    # QUEDARSE CON UN SOLO REGISTRO POR DNI
+    #
+    # Como está ordenado de más reciente a más antiguo,
+    # keep="first" conserva la fecha más reciente.
+    # ========================================================
+
+    df_stock = df_stock.drop_duplicates(
+        subset=["NUM_DOC"],
+        keep="first"
+    )
+
+    # ========================================================
+    # RESULTADO FINAL
+    # ========================================================
+
+    df_stock.reset_index(
+        drop=True,
+        inplace=True
+    )
 
     print()
     print("========================================")
@@ -313,10 +187,10 @@ def cargar_stock():
 
     print(
         "Registros finales:",
-        len(df)
+        len(df_stock)
     )
 
-    return df
+    return df_stock
 
 
 # ============================================================

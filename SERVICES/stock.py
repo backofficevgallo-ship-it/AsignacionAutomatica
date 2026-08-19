@@ -11,7 +11,10 @@ def buscar_ultimo_stock():
 
     for archivo in os.listdir(CARPETA_STOCK):
 
-        ruta = os.path.join(CARPETA_STOCK, archivo)
+        ruta = os.path.join(
+            CARPETA_STOCK,
+            archivo
+        )
 
         if not os.path.isfile(ruta):
             continue
@@ -29,7 +32,10 @@ def buscar_ultimo_stock():
             "No se encontró ningún archivo STOCK."
         )
 
-    return max(archivos, key=os.path.getmtime)
+    return max(
+        archivos,
+        key=os.path.getmtime
+    )
 
 
 def cargar_stock():
@@ -42,13 +48,33 @@ def cargar_stock():
     print("========================================")
     print(ruta)
 
-    df = pd.read_excel(ruta)
+    # ========================================================
+    # LEER SOLAMENTE LAS COLUMNAS NECESARIAS
+    # ========================================================
 
-    # Limpiar encabezados
-    df.columns = df.columns.astype(str).str.strip()
+    df = pd.read_excel(
+        ruta,
+        usecols=[
+            "NUM_DOC",
+            "FECHA_ASIG_ESTUDIO"
+        ]
+    )
+
+    # ========================================================
+    # LIMPIAR ENCABEZADOS
+    # ========================================================
+
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+    )
 
     print()
-    print("Cantidad de registros:", len(df))
+    print(
+        "Cantidad de registros:",
+        len(df)
+    )
 
     return df
 
@@ -61,22 +87,27 @@ def preparar_stock(df_stock):
     ]
 
     for columna in columnas_necesarias:
+
         if columna not in df_stock.columns:
+
             raise KeyError(
-                f"No se encontró la columna '{columna}' en STOCK."
+                f"No se encontró la columna "
+                f"'{columna}' en STOCK."
             )
 
     stock = df_stock[
         columnas_necesarias
     ].copy()
 
-    # Normalizar DNI para evitar problemas con .0,
-    # espacios o valores numéricos.
     stock["NUM_DOC"] = (
         stock["NUM_DOC"]
-        .astype(str)
+        .astype("string")
         .str.strip()
-        .str.replace(r"\.0$", "", regex=True)
+        .str.replace(
+            r"\.0$",
+            "",
+            regex=True
+        )
     )
 
     return stock

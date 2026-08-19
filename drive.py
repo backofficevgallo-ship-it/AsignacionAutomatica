@@ -487,7 +487,56 @@ def descargar_stock_ligero():
 
     nombre_archivo = archivo["name"]
 
-    # El stock ligero es CSV
+    if not nombre_archivo.lower().endswith(
+        ".csv"
+    ):
+
+        nombre_archivo += ".csv"
+
+    ruta_local = os.path.join(
+        carpeta_local,
+        nombre_archivo
+    )
+
+    descargar_archivo_drive(
+        archivo,
+        ruta_local
+    )
+
+    return ruta_local
+
+def descargar_pagos_ligero():
+
+    carpeta_drive = "PAGOS_LIGERO"
+    carpeta_local = "ARCHIVOS/PAGOS_LIGERO"
+
+    print()
+    print("========================================")
+    print("DESCARGANDO PAGOS LIGERO")
+    print("========================================")
+
+    carpeta_id = buscar_carpeta_drive(
+        carpeta_drive
+    )
+
+    archivo = buscar_ultimo_archivo_drive(
+        carpeta_id
+    )
+
+    if archivo is None:
+
+        raise FileNotFoundError(
+            "No se encontró ningún archivo "
+            "en la carpeta PAGOS_LIGERO."
+        )
+
+    os.makedirs(
+        carpeta_local,
+        exist_ok=True
+    )
+
+    nombre_archivo = archivo["name"]
+
     if not nombre_archivo.lower().endswith(
         ".csv"
     ):

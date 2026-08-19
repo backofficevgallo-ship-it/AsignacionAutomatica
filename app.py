@@ -18,6 +18,7 @@ from SERVICES.moria import cruzar_moria
 
 from drive import descargar_ultimo_de_carpeta
 from drive import descargar_stock_ligero
+from drive import descargar_pagos_ligero
 
 
 # ============================================================

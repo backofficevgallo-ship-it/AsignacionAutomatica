@@ -50,30 +50,98 @@ def buscar_ultimo_pago():
 
 def cargar_pagos_agosto():
 
-    ruta = buscar_ultimo_pago()
+    carpeta = "ARCHIVOS/PAGOS_LIGERO"
+
+    if not os.path.exists(carpeta):
+
+        raise FileNotFoundError(
+            f"No existe la carpeta {carpeta}."
+        )
+
+    archivos = []
+
+    for archivo in os.listdir(carpeta):
+
+        ruta = os.path.join(
+            carpeta,
+            archivo
+        )
+
+        if not os.path.isfile(ruta):
+            continue
+
+        if archivo.lower().endswith(".csv"):
+
+            archivos.append(ruta)
+
+    if not archivos:
+
+        raise FileNotFoundError(
+            "No se encontró ningún CSV "
+            "de PAGOS LIGERO."
+        )
+
+    ruta = max(
+        archivos,
+        key=os.path.getmtime
+    )
 
     print()
     print("========================================")
-    print("PAGOS AGOSTO ENCONTRADO")
+    print("PAGOS AGOSTO LIGERO ENCONTRADO")
     print("========================================")
 
     print(ruta)
 
     print()
-    print("Leyendo solamente DNI e Importe...")
+    print("Leyendo DNI e Importe...")
 
-    df = pd.read_excel(
+    # --------------------------------------------------------
+    # LEER CSV
+    # --------------------------------------------------------
+
+    df = pd.read_csv(
         ruta,
+        sep=";",
+        encoding="utf-8-sig",
         usecols=[
             "DNI",
             "Importe"
         ]
     )
 
+    # --------------------------------------------------------
+    # NORMALIZAR COLUMNAS
+    # --------------------------------------------------------
+
     df.columns = (
         df.columns
         .astype(str)
         .str.strip()
+    )
+
+    # --------------------------------------------------------
+    # NORMALIZAR DNI
+    # --------------------------------------------------------
+
+    df["DNI"] = (
+        df["DNI"]
+        .astype("string")
+        .str.strip()
+        .str.replace(
+            r"\.0$",
+            "",
+            regex=True
+        )
+    )
+
+    # --------------------------------------------------------
+    # NORMALIZAR IMPORTE
+    # --------------------------------------------------------
+
+    df["Importe"] = pd.to_numeric(
+        df["Importe"],
+        errors="coerce"
     )
 
     print()
@@ -89,7 +157,6 @@ def cargar_pagos_agosto():
     print("- Importe")
 
     return df
-
 
 # ============================================================
 # CRUZAR PAGOS AGOSTO

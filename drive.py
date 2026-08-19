@@ -17,12 +17,6 @@ SCOPES = [
 
 # ============================================================
 # CARGAR CREDENCIALES
-#
-# LOCAL:
-#   Usa credenciales_drive.json
-#
-# RENDER:
-#   Usa variable de entorno GOOGLE_CREDENTIALS
 # ============================================================
 
 def cargar_credenciales():
@@ -106,10 +100,6 @@ drive = build(
 
 def buscar_carpeta_drive(nombre_carpeta):
 
-    # --------------------------------------------------------
-    # Primero buscamos por nombre exacto
-    # --------------------------------------------------------
-
     resultado = drive.files().list(
         q=(
             "name = '"
@@ -127,11 +117,6 @@ def buscar_carpeta_drive(nombre_carpeta):
         "files",
         []
     )
-
-    # --------------------------------------------------------
-    # Si no encuentra, hacemos búsqueda general
-    # para tolerar diferencias de mayúsculas/minúsculas
-    # --------------------------------------------------------
 
     if not carpetas:
 
@@ -165,10 +150,6 @@ def buscar_carpeta_drive(nombre_carpeta):
             .casefold()
             == nombre_buscado
         ]
-
-    # --------------------------------------------------------
-    # Si sigue sin encontrar
-    # --------------------------------------------------------
 
     if not carpetas:
 
@@ -418,27 +399,59 @@ def descargar_ultimo_de_carpeta(
     )
 
     # --------------------------------------------------------
-    # # RUTA LOCAL
-    # # --------------------------------------------------------
-    
+    # NOMBRE DEL ARCHIVO
+    # --------------------------------------------------------
+
     nombre_archivo = archivo["name"]
 
-    # Google Drive puede devolver el archivo sin extensión
-    if not nombre_archivo.lower().endswith((".xlsx", ".xls")):
+    # Google Drive puede devolver el archivo
+    # con o sin extensión.
+
+    if not nombre_archivo.lower().endswith(
+        (".xlsx", ".xls")
+    ):
+
         if archivo.get("mimeType") == (
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         ):
+
             nombre_archivo += ".xlsx"
 
         elif archivo.get("mimeType") == (
             "application/vnd.ms-excel"
-            ):
+        ):
+
             nombre_archivo += ".xls"
 
-        ruta_local = os.path.join(
-            carpeta_local,
-            nombre_archivo
-            )
+    # --------------------------------------------------------
+    # RUTA LOCAL
+    # --------------------------------------------------------
+
+    nombre_archivo = archivo["name"]
+
+    # Google Drive puede devolver el archivo sin extensión
+    if not nombre_archivo.lower().endswith((".xlsx", ".xls")):
+
+        if archivo.get("mimeType") == (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ):
+
+            nombre_archivo += ".xlsx"
+
+        elif archivo.get("mimeType") == (
+            "application/vnd.ms-excel"
+        ):
+
+            nombre_archivo += ".xls"
+
+    # --------------------------------------------------------
+    # SIEMPRE CREAR LA RUTA
+    # --------------------------------------------------------
+
+    ruta_local = os.path.join(
+        carpeta_local,
+        nombre_archivo
+    )
 
     # --------------------------------------------------------
     # DESCARGAR

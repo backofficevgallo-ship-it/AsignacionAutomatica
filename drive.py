@@ -418,13 +418,27 @@ def descargar_ultimo_de_carpeta(
     )
 
     # --------------------------------------------------------
-    # RUTA LOCAL
-    # --------------------------------------------------------
+    # # RUTA LOCAL
+    # # --------------------------------------------------------
+    
+    nombre_archivo = archivo["name"]
 
-    ruta_local = os.path.join(
-        carpeta_local,
-        archivo["name"]
-    )
+    # Google Drive puede devolver el archivo sin extensión
+    if not nombre_archivo.lower().endswith((".xlsx", ".xls")):
+        if archivo.get("mimeType") == (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ):
+            nombre_archivo += ".xlsx"
+
+        elif archivo.get("mimeType") == (
+            "application/vnd.ms-excel"
+            ):
+            nombre_archivo += ".xls"
+
+        ruta_local = os.path.join(
+            carpeta_local,
+            nombre_archivo
+            )
 
     # --------------------------------------------------------
     # DESCARGAR

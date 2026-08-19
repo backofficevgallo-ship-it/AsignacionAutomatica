@@ -22,7 +22,7 @@ SCOPES = [
 #   Usa credenciales_drive.json
 #
 # RENDER:
-#   Usa la variable de entorno GOOGLE_CREDENTIALS
+#   Usa variable de entorno GOOGLE_CREDENTIALS
 # ============================================================
 
 def cargar_credenciales():
@@ -104,9 +104,11 @@ drive = build(
 # BUSCAR CARPETA
 # ============================================================
 
-def buscar_carpeta_drive(
-    nombre_carpeta
-):
+def buscar_carpeta_drive(nombre_carpeta):
+
+    # --------------------------------------------------------
+    # Primero buscamos por nombre exacto
+    # --------------------------------------------------------
 
     resultado = drive.files().list(
         q=(
@@ -126,6 +128,48 @@ def buscar_carpeta_drive(
         []
     )
 
+    # --------------------------------------------------------
+    # Si no encuentra, hacemos búsqueda general
+    # para tolerar diferencias de mayúsculas/minúsculas
+    # --------------------------------------------------------
+
+    if not carpetas:
+
+        resultado = drive.files().list(
+            q=(
+                "mimeType = "
+                "'application/vnd.google-apps.folder' "
+                "and trashed = false"
+            ),
+            spaces="drive",
+            pageSize=100,
+            fields="files(id,name,mimeType)"
+        ).execute()
+
+        todas_las_carpetas = resultado.get(
+            "files",
+            []
+        )
+
+        nombre_buscado = (
+            nombre_carpeta
+            .strip()
+            .casefold()
+        )
+
+        carpetas = [
+            carpeta
+            for carpeta in todas_las_carpetas
+            if carpeta["name"]
+            .strip()
+            .casefold()
+            == nombre_buscado
+        ]
+
+    # --------------------------------------------------------
+    # Si sigue sin encontrar
+    # --------------------------------------------------------
+
     if not carpetas:
 
         raise FileNotFoundError(
@@ -133,7 +177,24 @@ def buscar_carpeta_drive(
             f"'{nombre_carpeta}' en Google Drive."
         )
 
-    return carpetas[0]["id"]
+    carpeta = carpetas[0]
+
+    print()
+    print(
+        "CARPETA DRIVE ENCONTRADA:"
+    )
+
+    print(
+        "Nombre:",
+        carpeta["name"]
+    )
+
+    print(
+        "ID:",
+        carpeta["id"]
+    )
+
+    return carpeta["id"]
 
 
 # ============================================================
@@ -153,7 +214,7 @@ def buscar_ultimo_excel_drive(
         ),
         spaces="drive",
         orderBy="modifiedTime desc",
-        pageSize=50,
+        pageSize=100,
         fields=(
             "files("
             "id,"
@@ -172,16 +233,58 @@ def buscar_ultimo_excel_drive(
     archivos_excel = [
         archivo
         for archivo in archivos
-        if archivo["name"].lower().endswith(
+        if archivo["name"]
+        .lower()
+        .endswith(
             (".xlsx", ".xls")
         )
     ]
+
+    # --------------------------------------------------------
+    # MOSTRAR QUÉ ENCONTRÓ
+    # --------------------------------------------------------
+
+    print()
+    print(
+        "EXCEL ENCONTRADOS EN DRIVE:"
+    )
+
+    for archivo in archivos_excel:
+
+        print(
+            "-",
+            archivo["name"],
+            "|",
+            archivo.get(
+                "modifiedTime",
+                ""
+            )
+        )
+
+    # --------------------------------------------------------
+    # SI NO HAY EXCEL
+    # --------------------------------------------------------
 
     if not archivos_excel:
 
         return None
 
-    return archivos_excel[0]
+    # --------------------------------------------------------
+    # EL PRIMERO ES EL MÁS RECIENTE
+    # --------------------------------------------------------
+
+    archivo = archivos_excel[0]
+
+    print()
+    print(
+        "EXCEL SELECCIONADO:"
+    )
+
+    print(
+        archivo["name"]
+    )
+
+    return archivo
 
 
 # ============================================================
@@ -195,8 +298,20 @@ def descargar_archivo_drive(
 
     print()
     print(
-        "Descargando desde Drive:",
+        "========================================"
+    )
+
+    print(
+        "DESCARGANDO DESDE GOOGLE DRIVE"
+    )
+
+    print(
+        "Archivo:",
         archivo["name"]
+    )
+
+    print(
+        "========================================"
     )
 
     request = drive.files().get_media(
@@ -242,6 +357,8 @@ def descargar_archivo_drive(
                     f"Descarga: {porcentaje}%"
                 )
 
+    print()
+
     print(
         "Guardado localmente en:",
         ruta_local
@@ -257,9 +374,31 @@ def descargar_ultimo_de_carpeta(
     carpeta_local
 ):
 
+    print()
+    print(
+        "========================================"
+    )
+
+    print(
+        "BUSCANDO CARPETA:",
+        nombre_carpeta
+    )
+
+    print(
+        "========================================"
+    )
+
+    # --------------------------------------------------------
+    # BUSCAR CARPETA
+    # --------------------------------------------------------
+
     carpeta_id = buscar_carpeta_drive(
         nombre_carpeta
     )
+
+    # --------------------------------------------------------
+    # BUSCAR ÚLTIMO EXCEL
+    # --------------------------------------------------------
 
     archivo = buscar_ultimo_excel_drive(
         carpeta_id
@@ -272,15 +411,27 @@ def descargar_ultimo_de_carpeta(
             f"en la carpeta '{nombre_carpeta}'."
         )
 
+    # --------------------------------------------------------
+    # CREAR CARPETA LOCAL
+    # --------------------------------------------------------
+
     os.makedirs(
         carpeta_local,
         exist_ok=True
     )
 
+    # --------------------------------------------------------
+    # RUTA LOCAL
+    # --------------------------------------------------------
+
     ruta_local = os.path.join(
         carpeta_local,
         archivo["name"]
     )
+
+    # --------------------------------------------------------
+    # DESCARGAR
+    # --------------------------------------------------------
 
     descargar_archivo_drive(
         archivo,

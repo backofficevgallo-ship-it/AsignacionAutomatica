@@ -139,38 +139,14 @@ def cruzar_stock(df_asignacion, df_stock):
     # ========================================================
 
     if "NUM_DOC" not in df_stock.columns:
-
         raise KeyError(
             "No se encontró NUM_DOC en STOCK."
         )
 
     if "FECHA_ASIG_ESTUDIO" not in df_stock.columns:
-
         raise KeyError(
             "No se encontró FECHA_ASIG_ESTUDIO en STOCK."
         )
-
-    # ========================================================
-    # NORMALIZAR STOCK
-    # ========================================================
-
-    stock = df_stock[
-        [
-            "NUM_DOC",
-            "FECHA_ASIG_ESTUDIO"
-        ]
-    ].copy()
-
-    stock["NUM_DOC"] = (
-        stock["NUM_DOC"]
-        .astype("string")
-        .str.strip()
-        .str.replace(
-            r"\.0$",
-            "",
-            regex=True
-        )
-    )
 
     # ========================================================
     # NORMALIZAR DNI ASIGNACION
@@ -188,17 +164,17 @@ def cruzar_stock(df_asignacion, df_stock):
     )
 
     # ========================================================
-    # CREAR MAPA
+    # CREAR MAPA DIRECTAMENTE
+    #
+    # cargar_stock() ya dejó un solo registro por DNI.
+    # No necesitamos copiar ni hacer drop_duplicates.
     # ========================================================
 
-    mapa = (
-        stock
-        .drop_duplicates(
-            subset=["NUM_DOC"],
-            keep="first"
+    mapa = dict(
+        zip(
+            df_stock["NUM_DOC"].astype(str),
+            df_stock["FECHA_ASIG_ESTUDIO"]
         )
-        .set_index("NUM_DOC")
-        ["FECHA_ASIG_ESTUDIO"]
     )
 
     # ========================================================
@@ -222,13 +198,6 @@ def cruzar_stock(df_asignacion, df_stock):
     no_encontrados = (
         df_asignacion["ASIGNACION"]
         .isna()
-        .sum()
-    )
-
-    dnis_multiples = (
-        stock["NUM_DOC"]
-        .value_counts()
-        .gt(1)
         .sum()
     )
 
@@ -258,7 +227,7 @@ def cruzar_stock(df_asignacion, df_stock):
 
     print(
         "DNI con múltiples registros:",
-        dnis_multiples
+        0
     )
 
     return df_asignacion

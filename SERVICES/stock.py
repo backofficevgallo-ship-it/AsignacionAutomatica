@@ -77,7 +77,7 @@ def normalizar_dni(valor):
 
 def convertir_fecha_excel(valor):
 
-    if valor is None or valor == "":
+    if valor is None:
         return 0
 
     texto = str(valor).strip()
@@ -87,13 +87,9 @@ def convertir_fecha_excel(valor):
 
     # ========================================================
     # FECHA SERIAL DE EXCEL
-    #
-    # La mayoría de las fechas del STOCK vienen como número.
-    # No usamos pandas para convertirlas.
     # ========================================================
 
     try:
-
         numero = float(texto)
 
         if numero > 0:
@@ -105,28 +101,47 @@ def convertir_fecha_excel(valor):
     # ========================================================
     # FECHA TEXTUAL
     #
-    # Solo usamos pandas si realmente no es un número.
+    # IMPORTANTE:
+    # No usamos pandas.
+    # Convertimos manualmente DD/MM/YYYY.
     # ========================================================
 
     try:
 
-        fecha = pd.to_datetime(
-            texto,
-            dayfirst=True,
-            errors="coerce"
-        )
+        partes = texto.replace("-", "/").split("/")
 
-        if pd.isna(fecha):
-            return 0
+        if len(partes) == 3:
 
-        # Convertimos la fecha a número comparable
-        return (
-            fecha - pd.Timestamp("1899-12-30")
-        ).total_seconds() / 86400
+            dia = int(partes[0])
+            mes = int(partes[1])
+            anio = int(partes[2])
+
+            if anio < 100:
+                anio += 2000
+
+            # Fecha serial aproximada de Excel
+            import datetime
+
+            fecha = datetime.datetime(
+                anio,
+                mes,
+                dia
+            )
+
+            base = datetime.datetime(
+                1899,
+                12,
+                30
+            )
+
+            return (
+                fecha - base
+            ).total_seconds() / 86400
 
     except Exception:
+        pass
 
-        return 0
+    return 0
 
 
 # ============================================================
@@ -756,6 +771,7 @@ def cargar_stock():
                     )
                 
                 if anterior is None:
+
                     stock_dict[dni] = (
                         fecha_original,
                         fecha_nueva
@@ -763,6 +779,7 @@ def cargar_stock():
                 else:
 
                     fecha_actual = anterior[1]
+                    
                     if fecha_nueva > fecha_actual:
 
                         stock_dict[dni] = (

@@ -59,7 +59,16 @@ def cargar_pagos_agosto():
 
     print(ruta)
 
-    df = pd.read_excel(ruta)
+    print()
+    print("Leyendo solamente DNI e Importe...")
+
+    df = pd.read_excel(
+        ruta,
+        usecols=[
+            "DNI",
+            "Importe"
+        ]
+    )
 
     df.columns = (
         df.columns
@@ -74,10 +83,10 @@ def cargar_pagos_agosto():
     )
 
     print()
-    print("Columnas encontradas:")
+    print("Columnas utilizadas:")
 
-    for columna in df.columns:
-        print("-", columna)
+    print("- DNI")
+    print("- Importe")
 
     return df
 

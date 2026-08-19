@@ -463,3 +463,107 @@ def descargar_ultimo_de_carpeta(
     )
 
     return ruta_local
+
+# ============================================================
+# DESCARGAR CSV DE STOCK LIGERO
+# ============================================================
+
+def descargar_stock_ligero():
+
+    nombre_carpeta = "STOCK_LIGERO"
+    carpeta_local = "ARCHIVOS/STOCK_LIGERO"
+
+    print()
+    print("========================================")
+    print("BUSCANDO STOCK LIGERO")
+    print("========================================")
+
+    # Buscar carpeta
+    carpeta_id = buscar_carpeta_drive(
+        nombre_carpeta
+    )
+
+    # Buscar archivos
+    resultado = drive.files().list(
+        q=(
+            "'"
+            + carpeta_id
+            + "' in parents "
+            "and trashed = false"
+        ),
+        spaces="drive",
+        orderBy="modifiedTime desc",
+        pageSize=50,
+        fields=(
+            "files("
+            "id,"
+            "name,"
+            "mimeType,"
+            "modifiedTime"
+            ")"
+        )
+    ).execute()
+
+    archivos = resultado.get(
+        "files",
+        []
+    )
+
+    print()
+    print("ARCHIVOS ENCONTRADOS:")
+
+    for archivo in archivos:
+
+        print(
+            "NOMBRE:",
+            archivo.get("name")
+        )
+
+        print(
+            "TIPO:",
+            archivo.get("mimeType")
+        )
+
+        print(
+            "MODIFICADO:",
+            archivo.get("modifiedTime")
+        )
+
+        print("----------------------------------------")
+
+    # Buscar CSV
+    archivos_csv = [
+        archivo
+        for archivo in archivos
+        if (
+            archivo.get("name", "")
+            .lower()
+            .endswith(".csv")
+        )
+    ]
+
+    if not archivos_csv:
+
+        raise FileNotFoundError(
+            "No se encontró stock_ligero.csv "
+            "en la carpeta STOCK_LIGERO."
+        )
+
+    archivo = archivos_csv[0]
+
+    os.makedirs(
+        carpeta_local,
+        exist_ok=True
+    )
+
+    ruta_local = os.path.join(
+        carpeta_local,
+        "stock_ligero.csv"
+    )
+
+    descargar_archivo_drive(
+        archivo,
+        ruta_local
+    )
+
+    return ruta_local

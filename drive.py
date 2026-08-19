@@ -201,9 +201,13 @@ def buscar_carpeta_drive(nombre_carpeta):
 # BUSCAR ÚLTIMO EXCEL DE UNA CARPETA
 # ============================================================
 
-def buscar_ultimo_excel_drive(
-    carpeta_id
-):
+def buscar_ultimo_excel_drive(carpeta_id):
+
+    print()
+    print("========================================")
+    print("BUSCANDO ARCHIVOS DENTRO DE LA CARPETA")
+    print("========================================")
+    print("ID CARPETA:", carpeta_id)
 
     resultado = drive.files().list(
         q=(
@@ -213,7 +217,6 @@ def buscar_ultimo_excel_drive(
             "and trashed = false"
         ),
         spaces="drive",
-        orderBy="modifiedTime desc",
         pageSize=100,
         fields=(
             "files("
@@ -230,48 +233,67 @@ def buscar_ultimo_excel_drive(
         []
     )
 
+    print()
+    print("ARCHIVOS ENCONTRADOS:")
+
+    if not archivos:
+
+        print(">>> NO SE ENCONTRO NINGUN ARCHIVO <<<")
+
+    for archivo in archivos:
+
+        print(
+            "NOMBRE:",
+            archivo.get("name")
+        )
+
+        print(
+            "TIPO:",
+            archivo.get("mimeType")
+        )
+
+        print(
+            "MODIFICADO:",
+            archivo.get("modifiedTime")
+        )
+
+        print("----------------------------------------")
+
+    # --------------------------------------------------------
+    # SOLO EXCEL
+    # --------------------------------------------------------
+
     archivos_excel = [
         archivo
         for archivo in archivos
-        if archivo["name"]
+        if archivo.get("name", "")
         .lower()
         .endswith(
             (".xlsx", ".xls")
         )
     ]
 
-    # --------------------------------------------------------
-    # MOSTRAR QUÉ ENCONTRÓ
-    # --------------------------------------------------------
-
     print()
     print(
-        "EXCEL ENCONTRADOS EN DRIVE:"
+        "CANTIDAD DE EXCEL ENCONTRADOS:",
+        len(archivos_excel)
     )
-
-    for archivo in archivos_excel:
-
-        print(
-            "-",
-            archivo["name"],
-            "|",
-            archivo.get(
-                "modifiedTime",
-                ""
-            )
-        )
-
-    # --------------------------------------------------------
-    # SI NO HAY EXCEL
-    # --------------------------------------------------------
 
     if not archivos_excel:
 
         return None
 
     # --------------------------------------------------------
-    # EL PRIMERO ES EL MÁS RECIENTE
+    # ORDENAR POR FECHA
     # --------------------------------------------------------
+
+    archivos_excel.sort(
+        key=lambda x: x.get(
+            "modifiedTime",
+            ""
+        ),
+        reverse=True
+    )
 
     archivo = archivos_excel[0]
 

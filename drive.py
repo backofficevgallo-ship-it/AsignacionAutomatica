@@ -236,8 +236,9 @@ def buscar_ultimo_excel_drive(
 
     tipos_archivos = [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-csv"
-    ]
+        "application/vnd.ms-excel",
+        "text/csv"
+        ]
 
     archivos_validos = [
         archivo

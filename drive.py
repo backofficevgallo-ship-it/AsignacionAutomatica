@@ -234,27 +234,27 @@ def buscar_ultimo_excel_drive(
 
         print("----------------------------------------")
 
-    tipos_excel = [
+    tipos_archivos = [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel"
+        "application/vnd.ms-csv"
     ]
 
-    archivos_excel = [
+    archivos_validos = [
         archivo
         for archivo in archivos
-        if archivo.get("mimeType") in tipos_excel
+        if archivo.get("mimeType") in tipos_archivos
     ]
 
     print(
         "CANTIDAD DE EXCEL ENCONTRADOS:",
-        len(archivos_excel)
+        len(archivos_validos)
     )
 
-    if not archivos_excel:
+    if not archivos_validos:
 
         return None
 
-    return archivos_excel[0]
+    return archivos_validos[0]
 
 
 # ============================================================

@@ -131,19 +131,19 @@ def normalizar_dni(valor):
     if pd.isna(valor):
         return ""
 
+    # Convertir directamente a string
     valor = str(valor).strip()
 
+    # Caso típico de Excel: 12345678.0
     if valor.endswith(".0"):
         valor = valor[:-2]
 
-    valor = "".join(
+    # Mantener solamente números
+    return "".join(
         caracter
         for caracter in valor
         if caracter.isdigit()
     )
-
-    return valor
-
 
 # ============================================================
 # BUSCAR COLUMNA DNI
@@ -221,12 +221,20 @@ def separar_categorias(
 
     reporte_temp["_DNI_CRUCE"] = (
         reporte_temp[columna_dni_reporte]
-        .apply(normalizar_dni)
+        .astype("string")
+        .str.strip()
+        .str.replace(r"\.0$","",regex=True)
+        .str.replace(r"\D","",regex=True)
+    .fillna("")
     )
 
     asignacion_temp["_DNI_CRUCE"] = (
         asignacion_temp["DNI"]
-        .apply(normalizar_dni)
+        .astype("string")
+        .str.strip()
+        .str.replace( r"\.0$", "",regex=True)
+        .str.replace( r"\D", "",regex=True)
+        .fillna("")
     )
 
     # --------------------------------------------------------

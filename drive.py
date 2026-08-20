@@ -172,9 +172,11 @@ def buscar_carpeta_drive(nombre_carpeta):
 
 # ============================================================
 # BUSCAR ÚLTIMO EXCEL DE UNA CARPETA
+#
+# Acepta XLSX, XLS y CSV
 # ============================================================
 
-def buscar_ultimo_excel_drive(
+def buscar_ultimo_archivo_drive(
     carpeta_id
 ):
 
@@ -238,7 +240,7 @@ def buscar_ultimo_excel_drive(
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-excel",
         "text/csv"
-        ]
+    ]
 
     archivos_validos = [
         archivo
@@ -247,57 +249,14 @@ def buscar_ultimo_excel_drive(
     ]
 
     print(
-        "CANTIDAD DE EXCEL ENCONTRADOS:",
+        "CANTIDAD DE ARCHIVOS VALIDOS:",
+        len(archivos_validos)
     )
 
     if not archivos_validos:
-
         return None
 
     return archivos_validos[0]
-
-
-# ============================================================
-# BUSCAR ÚLTIMO ARCHIVO DE UNA CARPETA
-#
-# Para STOCK, COLCHON, PAGOS y MORIA
-# ============================================================
-
-def buscar_ultimo_archivo_drive(
-    carpeta_id
-):
-
-    resultado = drive.files().list(
-        q=(
-            "'"
-            + carpeta_id
-            + "' in parents "
-            "and trashed = false"
-        ),
-        spaces="drive",
-        orderBy="modifiedTime desc",
-        pageSize=50,
-        fields=(
-            "files("
-            "id,"
-            "name,"
-            "mimeType,"
-            "modifiedTime"
-            ")"
-        )
-    ).execute()
-
-    archivos = resultado.get(
-        "files",
-        []
-    )
-
-    if not archivos:
-
-        return None
-
-    return archivos[0]
-
 
 # ============================================================
 # DESCARGAR ARCHIVO
@@ -404,14 +363,15 @@ def descargar_ultimo_de_carpeta(
         nombre_carpeta
     )
 
-    archivo = buscar_ultimo_excel_drive(
+    archivo = buscar_ultimo_archivo_drive(
         carpeta_id
-    )
+        )
 
     if archivo is None:
 
         raise FileNotFoundError(
-            f"No se encontró ningún Excel "
+            f"No se encontró ningún archivo válido "
+            f"(XLSX, XLS o CSV)"
             f"en la carpeta '{nombre_carpeta}'."
         )
 
@@ -423,7 +383,7 @@ def descargar_ultimo_de_carpeta(
     nombre_archivo = archivo["name"]
 
     if not nombre_archivo.lower().endswith(
-        (".xlsx", ".xls")
+        (".xlsx", ".xls", ".csv")
     ):
 
         if archivo.get("mimeType") == (
@@ -438,6 +398,11 @@ def descargar_ultimo_de_carpeta(
 
             nombre_archivo += ".xls"
 
+        elif archivo.get("mimeType") == (
+            "text/csv"
+        ):
+            nombre_archivo += ".csv"
+
     ruta_local = os.path.join(
         carpeta_local,
         nombre_archivo
@@ -449,5 +414,3 @@ def descargar_ultimo_de_carpeta(
     )
 
     return ruta_local
-
-

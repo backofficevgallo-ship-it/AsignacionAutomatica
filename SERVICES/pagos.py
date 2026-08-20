@@ -180,7 +180,7 @@ def cruzar_pagos_agosto(
         )
 
     # ========================================================
-    # COPIA
+    # NORMALIZAR DNI DE PAGOS
     # ========================================================
 
     pagos = df_pagos[
@@ -189,10 +189,6 @@ def cruzar_pagos_agosto(
             "Importe"
         ]
     ].copy()
-
-    # ========================================================
-    # NORMALIZAR DNI
-    # ========================================================
 
     pagos["DNI"] = (
         pagos["DNI"]
@@ -205,6 +201,10 @@ def cruzar_pagos_agosto(
         )
     )
 
+    # ========================================================
+    # NORMALIZAR DNI ASIGNACION
+    # ========================================================
+
     df_asignacion["DNI"] = (
         df_asignacion["DNI"]
         .astype("string")
@@ -215,6 +215,15 @@ def cruzar_pagos_agosto(
             regex=True
         )
     )
+
+    # ========================================================
+    # ELIMINAR DNI VACIOS DE PAGOS
+    # ========================================================
+
+    pagos = pagos[
+        pagos["DNI"].notna()
+        & (pagos["DNI"] != "")
+    ].copy()
 
     # ========================================================
     # DNI REPETIDOS
@@ -229,20 +238,24 @@ def cruzar_pagos_agosto(
     )
 
     # ========================================================
-    # CREAR MAPA DNI → IMPORTE
+    # MAPA DNI → IMPORTE
     # ========================================================
 
-    mapa = pagos.set_index(
-        "DNI"
-    )["Importe"]
+    mapa = dict(
+        zip(
+            pagos["DNI"],
+            pagos["Importe"]
+        )
+    )
 
-    # ========================================================
-    # CRUCE
-    # ========================================================
+    del pagos
+
 
     df_asignacion["PAGO AGOSTO"] = (
         df_asignacion["DNI"].map(mapa)
     )
+
+    del mapa
 
     # ========================================================
     # RESULTADOS

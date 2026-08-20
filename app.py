@@ -767,9 +767,10 @@ def ejecutar_automatizacion(ruta_reporte):
 
     import gc
 
-    # ========================================================
-    # 1. ACTUALIZAR ARCHIVOS DESDE DRIVE
-    # ========================================================
+    print(">>> INICIO AUTOMATIZACION")
+
+    # 1. DRIVE
+    print(">>> ACTUALIZANDO DRIVE")
 
     (
         ruta_stock,
@@ -778,81 +779,96 @@ def ejecutar_automatizacion(ruta_reporte):
         ruta_moria
     ) = actualizar_archivos_desde_drive()
 
-    # ========================================================
-    # 2. REPORTE OPERATIVO
-    # ========================================================
+    print(">>> DRIVE TERMINADO")
+
+    # 2. REPORTE
+    print(">>> CARGANDO REPORTE")
 
     reporte = cargar_reporte_operativo(
         ruta_reporte
     )
 
-    # ========================================================
-    # 3. BASE ASIGNACION
-    # ========================================================
+    print(">>> REPORTE TERMINADO")
+
+    # 3. ASIGNACION
+    print(">>> CREANDO ASIGNACION")
 
     asignacion = crear_base_asignacion(
         reporte
     )
 
-    # ========================================================
+    print(">>> ASIGNACION TERMINADA")
+
     # 4. STOCK
-    # ========================================================
-    
+    print(">>> CARGANDO STOCK")
+
     stock = cargar_stock()
+
+    print(">>> STOCK CARGADO")
 
     asignacion = cruzar_stock(
         asignacion,
         stock
-        )
+    )
+
+    print(">>> CRUCE STOCK TERMINADO")
 
     del stock
     gc.collect()
 
-    # ========================================================
     # 5. COLCHON
-    # ========================================================
+    print(">>> CARGANDO COLCHON")
 
     colchon = cargar_colchon()
+
+    print(">>> COLCHON CARGADO")
 
     asignacion = cruzar_colchon(
         asignacion,
         colchon
     )
 
+    print(">>> CRUCE COLCHON TERMINADO")
+
     del colchon
     gc.collect()
 
-    # ========================================================
-    # 6. PAGOS AGOSTO
-    # ========================================================
+    # 6. PAGOS
+    print(">>> CARGANDO PAGOS AGOSTO")
 
     pagos_agosto = cargar_pagos_agosto()
+
+    print(">>> PAGOS AGOSTO CARGADOS")
 
     asignacion = cruzar_pagos_agosto(
         asignacion,
         pagos_agosto
     )
 
+    print(">>> CRUCE PAGOS AGOSTO TERMINADO")
+
     del pagos_agosto
     gc.collect()
 
-    # ========================================================
     # 7. MORIA
-    # ========================================================
+    print(">>> CARGANDO MORIA")
 
     moria = cargar_moria()
+
+    print(">>> MORIA CARGADA")
 
     asignacion = cruzar_moria(
         asignacion,
         moria
     )
 
+    print(">>> CRUCE MORIA TERMINADO")
+
     del moria
     gc.collect()
 
-    # ========================================================
-    # 8. SEPARAR CATEGORIAS
-    # ========================================================
+    # 8. CATEGORIAS
+    print(">>> SEPARANDO CATEGORIAS")
 
     (
         asignacion,
@@ -863,18 +879,21 @@ def ejecutar_automatizacion(ruta_reporte):
         asignacion
     )
 
+    print(">>> CATEGORIAS TERMINADAS")
+
     del reporte
     gc.collect()
 
-    # ========================================================
-    # 9. GUARDAR RESULTADO
-    # ========================================================
+    # 9. GUARDAR
+    print(">>> GUARDANDO EXCEL")
 
     ruta = guardar_asignacion(
         asignacion,
         fallecidos,
         no_gestionar
     )
+
+    print(">>> EXCEL GUARDADO")
 
     resultado = {
         "asignacion": len(asignacion),
@@ -886,6 +905,8 @@ def ejecutar_automatizacion(ruta_reporte):
             + len(no_gestionar)
         )
     }
+
+    print(">>> FIN AUTOMATIZACION")
 
     return ruta, resultado
 
@@ -929,6 +950,33 @@ def ejecutar():
             )
 
         # ====================================================
+        # VALIDAR NOMBRE DEL REPORTE
+        # ====================================================
+
+        nombre_archivo = archivo.filename.strip()
+
+        if not nombre_archivo.startswith(
+            "SANTANDER--CH01_"
+        ):
+
+            raise ValueError(
+                "El archivo seleccionado no corresponde "
+                "al Reporte Operativo."
+            )
+
+        # ====================================================
+        # VALIDAR FORMATO
+        # ====================================================
+
+        if not nombre_archivo.lower().endswith(
+            (".xlsx", ".xls")
+        ):
+
+            raise ValueError(
+                "El Reporte Operativo debe ser un archivo Excel."
+            )
+
+        # ====================================================
         # GUARDAR REPORTE LOCALMENTE
         # ====================================================
 
@@ -939,7 +987,7 @@ def ejecutar():
 
         ruta_reporte = os.path.join(
             CARPETA_REPORTING,
-            archivo.filename
+            nombre_archivo
         )
 
         archivo.save(
@@ -953,7 +1001,7 @@ def ejecutar():
 
         print(
             "Archivo:",
-            archivo.filename
+            nombre_archivo
         )
 
         # ====================================================

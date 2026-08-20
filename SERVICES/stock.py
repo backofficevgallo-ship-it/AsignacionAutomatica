@@ -28,7 +28,7 @@ def buscar_ultimo_stock():
         if not os.path.isfile(ruta):
             continue
 
-        if archivo.lower().endswith((".xlsx", ".xls")):
+        if archivo.lower().endswith((".csv")):
             archivos.append(ruta)
 
     if not archivos:
@@ -66,7 +66,7 @@ def cargar_stock():
     # LEER SOLAMENTE LAS COLUMNAS NECESARIAS
     # ========================================================
 
-    df = pd.read_excel(
+    df = pd.read_csv(
         ruta,
         usecols=[
             "NUM_DOC",

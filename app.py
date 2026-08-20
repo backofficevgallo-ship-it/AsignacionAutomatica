@@ -777,8 +777,8 @@ def ejecutar_automatizacion(ruta_reporte):
     )
 
     # ========================================================
-    # # 4. STOCK LIGERO
-    # # ========================================================
+    # 4. STOCK LIGERO
+    # ========================================================
     
     ruta_stock_ligero = descargar_stock_ligero()
 
@@ -825,6 +825,8 @@ def ejecutar_automatizacion(ruta_reporte):
     # ========================================================
     # 6. PAGOS AGOSTO
     # ========================================================
+
+    ruta_pagos_ligero = descargar_pagos_ligero()
 
     pagos_agosto = cargar_pagos_agosto()
 

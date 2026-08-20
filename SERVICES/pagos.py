@@ -53,7 +53,6 @@ def cargar_pagos_agosto():
     carpeta = "ARCHIVOS/PAGOS_LIGERO"
 
     if not os.path.exists(carpeta):
-
         raise FileNotFoundError(
             f"No existe la carpeta {carpeta}."
         )

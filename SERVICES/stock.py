@@ -2,38 +2,38 @@ import os
 import pandas as pd
 
 
-CARPETA_STOCK_LIGERO = "ARCHIVOS/STOCK_LIGERO"
+CARPETA_STOCK = "ARCHIVOS/STOCK"
 
 
 # ============================================================
-# BUSCAR STOCK LIGERO
+# BUSCAR ÚLTIMO STOCK
 # ============================================================
 
-def buscar_stock_ligero():
+def buscar_ultimo_stock():
 
-    if not os.path.exists(CARPETA_STOCK_LIGERO):
+    if not os.path.exists(CARPETA_STOCK):
         raise FileNotFoundError(
-            f"No existe la carpeta {CARPETA_STOCK_LIGERO}."
+            f"No existe la carpeta {CARPETA_STOCK}."
         )
 
     archivos = []
 
-    for archivo in os.listdir(CARPETA_STOCK_LIGERO):
+    for archivo in os.listdir(CARPETA_STOCK):
 
         ruta = os.path.join(
-            CARPETA_STOCK_LIGERO,
+            CARPETA_STOCK,
             archivo
         )
 
         if not os.path.isfile(ruta):
             continue
 
-        if archivo.lower().endswith(".csv"):
+        if archivo.lower().endswith((".xlsx", ".xls")):
             archivos.append(ruta)
 
     if not archivos:
         raise FileNotFoundError(
-            "No se encontró stock_ligero.csv."
+            "No se encontró ningún archivo de STOCK."
         )
 
     return max(
@@ -48,35 +48,63 @@ def buscar_stock_ligero():
 
 def cargar_stock():
 
-    ruta = buscar_stock_ligero()
+    ruta = buscar_ultimo_stock()
 
     print()
     print("========================================")
-    print("STOCK LIGERO ENCONTRADO")
+    print("STOCK ENCONTRADO")
     print("========================================")
 
     print(ruta)
 
-    # --------------------------------------------------------
-    # LEER SOLAMENTE LAS DOS COLUMNAS
-    # --------------------------------------------------------
+    print()
+    print("Leyendo solamente:")
+    print("- NUM_DOC")
+    print("- FECHA_ASIG_ESTUDIO")
 
-    df = pd.read_csv(
+    # ========================================================
+    # LEER SOLAMENTE LAS COLUMNAS NECESARIAS
+    # ========================================================
+
+    df = pd.read_excel(
         ruta,
-        sep=";",
-        encoding="utf-8-sig",
         usecols=[
             "NUM_DOC",
             "FECHA_ASIG_ESTUDIO"
-        ],
-        dtype={
-            "NUM_DOC": "string"
-        }
+        ]
     )
 
-    # --------------------------------------------------------
+    # ========================================================
+    # NORMALIZAR COLUMNAS
+    # ========================================================
+
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+    )
+
+    # ========================================================
+    # VERIFICAR COLUMNAS
+    # ========================================================
+
+    columnas_necesarias = [
+        "NUM_DOC",
+        "FECHA_ASIG_ESTUDIO"
+    ]
+
+    for columna in columnas_necesarias:
+
+        if columna not in df.columns:
+
+            raise KeyError(
+                f"No se encontró la columna "
+                f"'{columna}' en STOCK."
+            )
+
+    # ========================================================
     # NORMALIZAR DNI
-    # --------------------------------------------------------
+    # ========================================================
 
     df["NUM_DOC"] = (
         df["NUM_DOC"]
@@ -89,26 +117,30 @@ def cargar_stock():
         )
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # ELIMINAR DNI VACÍOS
-    # --------------------------------------------------------
+    # ========================================================
 
     df = df[
         df["NUM_DOC"].notna()
         & (df["NUM_DOC"] != "")
     ].copy()
 
-    # --------------------------------------------------------
+    # ========================================================
     # ELIMINAR DUPLICADOS
-    # --------------------------------------------------------
+    # ========================================================
 
     df = df.drop_duplicates(
         subset=["NUM_DOC"],
         keep="first"
     )
 
+    # ========================================================
+    # RESULTADO
+    # ========================================================
+
     print()
-    print("Columnas encontradas:")
+    print("Columnas utilizadas:")
     print("- NUM_DOC")
     print("- FECHA_ASIG_ESTUDIO")
 

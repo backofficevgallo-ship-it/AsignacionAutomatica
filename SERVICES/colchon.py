@@ -11,6 +11,11 @@ CARPETA_COLCHON = "ARCHIVOS/COLCHON"
 
 def buscar_ultimo_colchon():
 
+    if not os.path.exists(CARPETA_COLCHON):
+        raise FileNotFoundError(
+            f"No existe la carpeta {CARPETA_COLCHON}."
+        )
+
     archivos = []
 
     for archivo in os.listdir(CARPETA_COLCHON):
@@ -32,7 +37,6 @@ def buscar_ultimo_colchon():
             archivos.append(ruta)
 
     if not archivos:
-
         raise FileNotFoundError(
             "No se encontró ningún archivo COLCHON."
         )
@@ -58,12 +62,78 @@ def cargar_colchon():
 
     print(ruta)
 
-    df = pd.read_excel(ruta)
+    print()
+    print("Leyendo solamente:")
+    print("- DNI")
+    print("- MONTO")
+
+    # ========================================================
+    # LEER SOLAMENTE LAS COLUMNAS NECESARIAS
+    # ========================================================
+
+    df = pd.read_excel(
+        ruta,
+        usecols=[
+            "DNI",
+            "MONTO"
+        ]
+    )
+
+    # ========================================================
+    # NORMALIZAR COLUMNAS
+    # ========================================================
 
     df.columns = (
         df.columns
         .astype(str)
         .str.strip()
+    )
+
+    # ========================================================
+    # VERIFICAR COLUMNAS
+    # ========================================================
+
+    if "DNI" not in df.columns:
+        raise KeyError(
+            "No se encontró la columna DNI en COLCHON."
+        )
+
+    if "MONTO" not in df.columns:
+        raise KeyError(
+            "No se encontró la columna MONTO en COLCHON."
+        )
+
+    # ========================================================
+    # NORMALIZAR DNI
+    # ========================================================
+
+    df["DNI"] = (
+        df["DNI"]
+        .astype("string")
+        .str.strip()
+        .str.replace(
+            r"\.0$",
+            "",
+            regex=True
+        )
+    )
+
+    # ========================================================
+    # ELIMINAR DNI VACÍOS
+    # ========================================================
+
+    df = df[
+        df["DNI"].notna()
+        & (df["DNI"] != "")
+    ].copy()
+
+    # ========================================================
+    # NORMALIZAR MONTO
+    # ========================================================
+
+    df["MONTO"] = pd.to_numeric(
+        df["MONTO"],
+        errors="coerce"
     )
 
     print()
@@ -73,10 +143,9 @@ def cargar_colchon():
     )
 
     print()
-    print("Columnas encontradas:")
-
-    for columna in df.columns:
-        print("-", columna)
+    print("Columnas utilizadas:")
+    print("- DNI")
+    print("- MONTO")
 
     return df
 
@@ -85,11 +154,14 @@ def cargar_colchon():
 # CRUZAR COLCHÓN
 # ============================================================
 
-def cruzar_colchon(df_asignacion, df_colchon):
+def cruzar_colchon(
+    df_asignacion,
+    df_colchon
+):
 
-    # --------------------------------------------------------
-    # Verificar columnas
-    # --------------------------------------------------------
+    # ========================================================
+    # VERIFICAR COLUMNAS
+    # ========================================================
 
     if "DNI" not in df_colchon.columns:
         raise KeyError(
@@ -98,7 +170,7 @@ def cruzar_colchon(df_asignacion, df_colchon):
 
     if "MONTO" not in df_colchon.columns:
         raise KeyError(
-            "No se encontró la columna CUOTAS en COLCHON."
+            "No se encontró la columna MONTO en COLCHON."
         )
 
     if "DNI" not in df_asignacion.columns:
@@ -106,9 +178,9 @@ def cruzar_colchon(df_asignacion, df_colchon):
             "No se encontró la columna DNI en ASIGNACION."
         )
 
-    # --------------------------------------------------------
-    # Copia
-    # --------------------------------------------------------
+    # ========================================================
+    # COPIA
+    # ========================================================
 
     colchon = df_colchon[
         [
@@ -117,13 +189,13 @@ def cruzar_colchon(df_asignacion, df_colchon):
         ]
     ].copy()
 
-    # --------------------------------------------------------
-    # Normalizar DNI
-    # --------------------------------------------------------
+    # ========================================================
+    # NORMALIZAR DNI
+    # ========================================================
 
     colchon["DNI"] = (
         colchon["DNI"]
-        .astype(str)
+        .astype("string")
         .str.strip()
         .str.replace(
             r"\.0$",
@@ -134,7 +206,7 @@ def cruzar_colchon(df_asignacion, df_colchon):
 
     df_asignacion["DNI"] = (
         df_asignacion["DNI"]
-        .astype(str)
+        .astype("string")
         .str.strip()
         .str.replace(
             r"\.0$",
@@ -143,46 +215,48 @@ def cruzar_colchon(df_asignacion, df_colchon):
         )
     )
 
-    # --------------------------------------------------------
-    # Si hay DNI repetidos en Colchón,
-    # usamos la primera coincidencia,
-    # igual que un BUSCARV.
-    # --------------------------------------------------------
+    # ========================================================
+    # DNI REPETIDOS
+    #
+    # Igual que BUSCARV:
+    # usamos la primera coincidencia.
+    # ========================================================
 
     colchon = colchon.drop_duplicates(
         subset="DNI",
         keep="first"
     )
 
-    # --------------------------------------------------------
-    # Crear mapa DNI → CUOTAS
-    # --------------------------------------------------------
+    # ========================================================
+    # CREAR MAPA DNI → MONTO
+    # ========================================================
 
     mapa = colchon.set_index(
         "DNI"
     )["MONTO"]
 
-    # --------------------------------------------------------
-    # Cruce
-    #
-    # Si no encuentra DNI:
-    # queda vacío.
-    # --------------------------------------------------------
+    # ========================================================
+    # CRUCE
+    # ========================================================
 
     df_asignacion["COLCHON"] = (
         df_asignacion["DNI"].map(mapa)
     )
 
-    # --------------------------------------------------------
-    # Resultado
-    # --------------------------------------------------------
+    # ========================================================
+    # RESULTADOS
+    # ========================================================
 
     encontrados = (
-        df_asignacion["COLCHON"].notna().sum()
+        df_asignacion["COLCHON"]
+        .notna()
+        .sum()
     )
 
     no_encontrados = (
-        df_asignacion["COLCHON"].isna().sum()
+        df_asignacion["COLCHON"]
+        .isna()
+        .sum()
     )
 
     print()

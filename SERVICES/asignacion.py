@@ -148,6 +148,33 @@ def cruzar_stock(df_asignacion, df_stock):
             "No se encontró FECHA_ASIG_ESTUDIO en STOCK."
         )
 
+    if "DNI" not in df_asignacion.columns:
+        raise KeyError(
+            "No se encontró DNI en ASIGNACION."
+        )
+
+    # ========================================================
+    # NORMALIZAR DNI STOCK
+    # ========================================================
+
+    stock = df_stock[
+        [
+            "NUM_DOC",
+            "FECHA_ASIG_ESTUDIO"
+        ]
+    ].copy()
+
+    stock["NUM_DOC"] = (
+        stock["NUM_DOC"]
+        .astype("string")
+        .str.strip()
+        .str.replace(
+            r"\.0$",
+            "",
+            regex=True
+        )
+    )
+
     # ========================================================
     # NORMALIZAR DNI ASIGNACION
     # ========================================================
@@ -164,18 +191,24 @@ def cruzar_stock(df_asignacion, df_stock):
     )
 
     # ========================================================
-    # CREAR MAPA DIRECTAMENTE
+    # ELIMINAR DNI DUPLICADOS
     #
-    # cargar_stock() ya dejó un solo registro por DNI.
-    # No necesitamos copiar ni hacer drop_duplicates.
+    # Nos quedamos con el primer registro,
+    # igual que el comportamiento anterior.
     # ========================================================
 
-    mapa = dict(
-        zip(
-            df_stock["NUM_DOC"].astype(str),
-            df_stock["FECHA_ASIG_ESTUDIO"]
-        )
+    stock = stock.drop_duplicates(
+        subset="NUM_DOC",
+        keep="first"
     )
+
+    # ========================================================
+    # CREAR MAPA
+    # ========================================================
+
+    mapa = stock.set_index(
+        "NUM_DOC"
+    )["FECHA_ASIG_ESTUDIO"]
 
     # ========================================================
     # CRUCE

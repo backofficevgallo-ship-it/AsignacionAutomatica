@@ -55,16 +55,123 @@ def cargar_moria():
     print("========================================")
     print("MORIA ENCONTRADO")
     print("========================================")
-
     print(ruta)
 
-    df = pd.read_excel(ruta)
+    print()
+    print("Leyendo solamente:")
+    print("- DNI")
+    print("- FECHA CARGA")
+    print("- MONTO BCO")
+    print("- VTO")
+
+    # ========================================================
+    # LEER SOLAMENTE LAS COLUMNAS NECESARIAS
+    # ========================================================
+
+    df = pd.read_excel(
+        ruta,
+        usecols=[
+            "DNI",
+            "FECHA CARGA",
+            "MONTO BCO",
+            "VTO"
+        ]
+    )
+
+    # ========================================================
+    # NORMALIZAR COLUMNAS
+    # ========================================================
 
     df.columns = (
         df.columns
         .astype(str)
         .str.strip()
     )
+
+    # ========================================================
+    # VERIFICAR COLUMNAS
+    # ========================================================
+
+    columnas_necesarias = [
+        "DNI",
+        "FECHA CARGA",
+        "MONTO BCO",
+        "VTO"
+    ]
+
+    for columna in columnas_necesarias:
+
+        if columna not in df.columns:
+
+            raise KeyError(
+                f"No se encontró la columna "
+                f"'{columna}' en MORIA."
+            )
+
+    # ========================================================
+    # NORMALIZAR DNI
+    # ========================================================
+
+    df["DNI"] = (
+        df["DNI"]
+        .astype("string")
+        .str.strip()
+        .str.replace(
+            r"\.0$",
+            "",
+            regex=True
+        )
+    )
+
+    # ========================================================
+    # ELIMINAR DNI VACÍOS
+    # ========================================================
+
+    df = df[
+        df["DNI"].notna()
+        & (df["DNI"] != "")
+    ].copy()
+
+    # ========================================================
+    # CONVERTIR FECHAS
+    # ========================================================
+
+    df["FECHA CARGA"] = pd.to_datetime(
+        df["FECHA CARGA"],
+        errors="coerce",
+        dayfirst=True
+    )
+
+    df["VTO"] = pd.to_datetime(
+        df["VTO"],
+        errors="coerce",
+        dayfirst=True
+    )
+
+    # ========================================================
+    # CONVERTIR MONTO BCO
+    # ========================================================
+
+    df["MONTO BCO"] = pd.to_numeric(
+        df["MONTO BCO"],
+        errors="coerce"
+    )
+
+    # ========================================================
+    # ELIMINAR DUPLICADOS
+    #
+    # Igual que BUSCARV:
+    # primera coincidencia.
+    # ========================================================
+
+    df = df.drop_duplicates(
+        subset=["DNI"],
+        keep="first"
+    )
+
+    # ========================================================
+    # RESULTADO
+    # ========================================================
 
     print()
     print(
@@ -73,10 +180,11 @@ def cargar_moria():
     )
 
     print()
-    print("Columnas encontradas:")
-
-    for columna in df.columns:
-        print("-", columna)
+    print("Columnas utilizadas:")
+    print("- DNI")
+    print("- FECHA CARGA")
+    print("- MONTO BCO")
+    print("- VTO")
 
     return df
 

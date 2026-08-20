@@ -248,7 +248,6 @@ def buscar_ultimo_excel_drive(
 
     print(
         "CANTIDAD DE EXCEL ENCONTRADOS:",
-        len(archivos_validos)
     )
 
     if not archivos_validos:
